@@ -1,0 +1,17 @@
+[project]
+name = "anonify"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "gliner>=0.2.16",
+    "pyahocorasick>=2.1.0",
+    "spacy>=3.8.4",
+]
+
+[dependency-groups]
+dev = [
+    "ipython>=9.0.0",
+    "pytest>=8.3.4",
+]
