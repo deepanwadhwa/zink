@@ -1,6 +1,6 @@
 # ZINK (Zero-shot Ink)
 
-ZINK is a Python package designed for zero-shot anonymization of entities within unstructured text data. It allows you to redact or replace sensitive information based on specified entity labels, without requiring pre-trained models or extensive training data.
+ZINK is a Python package designed for zero-shot anonymization of entities within unstructured text data. It allows you to redact or replace sensitive information based on specified entity labels.
 
 ## Description
 
