@@ -1,29 +1,80 @@
-Welcome to anonify!
+# ZINK (Zero-shot Ink)
 
-# anonify
+ZINK is a Python package designed for zero-shot anonymization of entities within unstructured text data. It allows you to redact or replace sensitive information based on specified entity labels, without requiring pre-trained models or extensive training data.
 
-**anonify** is a Python library for anonymizing sensitive information in unstructured text. It can identify various entity types—like names, phone numbers, medical conditions, or even custom labels—and then **redact** or **replace** them with consistent, privacy-preserving placeholders.
+## Description
 
-## Key Features
+In today's data-driven world, protecting sensitive information is paramount. ZINK provides a simple and effective solution for anonymizing text data by identifying and masking entities such as names, ages, phone numbers, medical conditions, and more. With ZINK, you can ensure data privacy while still maintaining the utility of your text data for analysis and processing.
 
-- **Automatic Entity Detection**  
-  Uses a pre-trained or rule-based Named Entity Recognition (NER) model to detect sensitive entities.
+ZINK leverages the power of zero-shot techniques, meaning it doesn't require prior training on specific datasets. You simply provide the text and the entity labels you want to anonymize, and ZINK handles the rest.
 
-- **Redaction & Replacement**  
-  - `redact(text, labels)` replaces matched entities with placeholders (e.g., `person_REDACTED`).  
-  - `replace(text, labels)` swaps matched entities with realistic pseudonyms.
+## Features
 
-- **Consistency Control**  
-  When using `replace`, each recognized entity can be mapped to a single pseudonym across the text, preserving coherence.
-
-- **Customizability**  
-  - Extend or override default label sets (e.g., `person`, `location`, `furniture`, etc.).  
-  - Pass in your own user-defined replacements.  
-
-- **LRU Cache (Optional)**  
-  Speeds up repeated calls with the same input text and label sets.
+-   **Zero-shot anonymization:** No training data or pre-trained models required.
+-   **Flexible entity labeling:** Anonymize any type of entity by specifying custom labels.
+-   **Redaction and replacement:** Choose between redacting entities (replacing them with `[LABEL]_REDACTED`) or replacing them with a generic placeholder.
+-   **Easy integration:** Simple and intuitive API for seamless integration into your Python projects.
 
 ## Installation
 
 ```bash
-pip install anonify
+pip install zink
+Usage
+Redacting Entities
+The redact function replaces identified entities with [LABEL]_REDACTED.
+
+Python
+
+import zink as pss
+
+text = "John works as a doctor and plays football after work and drives a toyota."
+labels = ("person", "profession", "sport", "car")
+result = pss.redact(text, labels)
+print(result.anonymized_text)
+Example output:
+
+person_REDACTED works as a profession_REDACTED and plays sport_REDACTED after work and drives a car_REDACTED.
+Replacing Entities
+The replace function replaces identified entities with a generic placeholder.
+
+Python
+
+import zink as pss
+
+text = "John Doe dialled his mother at 992-234-3456 and then went out for a walk."
+labels = ("person", "phone number", "relationship")
+result = pss.replace(text, labels)
+print(result.anonymized_text)
+Example output:
+
+[person] dialled his [relationship] at [phone number] and then went out for a walk.
+Another example:
+
+Python
+
+import zink as pss
+
+text = "Patient, 33 years old, was admitted with a chest pain"
+labels = ("age", "medical condition")
+result = pss.replace(text, labels)
+print(result.anonymized_text)
+Example output:
+
+Patient, [age], was admitted with a [medical condition]
+Testing
+To run the tests, navigate to the project directory and execute:
+
+Bash
+
+pytest
+Contributing
+Contributions are welcome! Please feel free to submit pull requests or open issues to suggest improvements or report bugs.   
+
+Fork the repository.
+Create a new branch: git checkout -b feature/your-feature
+Make your changes.
+Commit your changes: git commit -m 'Add your feature'
+Push to the branch: git push origin feature/your-feature
+Submit a pull request.
+License
+This project is licensed under the Apache 2.0 License.
