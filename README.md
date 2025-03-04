@@ -19,10 +19,13 @@ ZINK leverages the power of zero-shot techniques, meaning it doesn't require pri
 
 ```bash
 pip install zink
-Usage
-Redacting Entities
+```
+## Usage
+
+### Redacting Entities
 The redact function replaces identified entities with [LABEL]_REDACTED.
 
+```bash
 Python
 
 import zink as pss
@@ -34,9 +37,12 @@ print(result.anonymized_text)
 Example output:
 
 person_REDACTED works as a profession_REDACTED and plays sport_REDACTED after work and drives a car_REDACTED.
-Replacing Entities
-The replace function replaces identified entities with a generic placeholder.
+```
 
+### Replacing Entities
+The replace function replaces identified entities with a random entity of the same type.
+
+```bash
 Python
 
 import zink as pss
@@ -47,9 +53,12 @@ result = pss.replace(text, labels)
 print(result.anonymized_text)
 Example output:
 
-[person] dialled his [relationship] at [phone number] and then went out for a walk.
+Warren Buffet dialled his Uncle at 2347789287 and then went out for a walk.
+```
+
 Another example:
 
+```bash
 Python
 
 import zink as pss
@@ -60,14 +69,17 @@ result = pss.replace(text, labels)
 print(result.anonymized_text)
 Example output:
 
-Patient, [age], was admitted with a [medical condition]
-Testing
+Patient, 78 years old, was admitted with a Diabetes Mellitus.
+```
+
+### Testing
 To run the tests, navigate to the project directory and execute:
 
-Bash
-
+```bash
 pytest
-Contributing
+```
+
+### Contributing
 Contributions are welcome! Please feel free to submit pull requests or open issues to suggest improvements or report bugs.   
 
 Fork the repository.
