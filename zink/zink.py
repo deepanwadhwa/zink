@@ -7,7 +7,6 @@ warnings.filterwarnings("ignore")
 from functools import lru_cache
 # Instantiate default components at module load time.
 
-
 _DEFAULT_EXTRACTOR = EntityExtractor()
 _DEFAULT_MERGER = EntityMerger()
 

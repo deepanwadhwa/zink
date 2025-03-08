@@ -1,7 +1,7 @@
 [project]
 name = "zink"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.1.1"
+description = "Zink lets you safeguard privacy by detecting sensitive information and replacing it with secure, customizable placeholders."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -15,3 +15,16 @@ dev = [
     "ipython>=9.0.0",
     "pytest>=8.3.4",
 ]
+
+[tool.setuptools]
+packages = ["zink"]
+include-package-data = true
+
+[project.urls]
+Homepage = "https://github.com/deepanwadhwa/zink"
+Repository = "https://github.com/deepanwadhwa/zink"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
