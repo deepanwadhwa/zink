@@ -1,6 +1,6 @@
 [project]
 name = "zink"
-version = "0.1.2"
+version = "0.2.0"
 description = "Zink lets you safeguard privacy by detecting sensitive information and replacing it with secure, customizable placeholders."
 readme = "README.md"
 requires-python = ">=3.12"

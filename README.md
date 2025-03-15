@@ -26,8 +26,6 @@ pip install zink
 The redact function replaces identified entities with [LABEL]_REDACTED.
 
 ```bash
-Python
-
 import zink as pss
 
 text = "John works as a doctor and plays football after work and drives a toyota."
@@ -43,24 +41,19 @@ person_REDACTED works as a profession_REDACTED and plays sport_REDACTED after wo
 The replace function replaces identified entities with a random entity of the same type.
 
 ```bash
-Python
-
 import zink as pss
 
 text = "John Doe dialled his mother at 992-234-3456 and then went out for a walk."
 labels = ("person", "phone number", "relationship")
 result = pss.replace(text, labels)
 print(result.anonymized_text)
-Example output:
 
-Warren Buffet dialled his Uncle at 2347789287 and then went out for a walk.
+#Possible output: Warren Buffet dialled his Uncle at 2347789287 and then went out for a walk.
 ```
 
 Another example:
 
 ```bash
-Python
-
 import zink as pss
 
 text = "Patient, 33 years old, was admitted with a chest pain"
@@ -70,6 +63,24 @@ print(result.anonymized_text)
 Example output:
 
 Patient, 78 years old, was admitted with a Diabetes Mellitus.
+```
+
+### Replacing Entities with your own data
+This feature is for the scenario when you want to replace entities with your own dataset. Unlike the standard replace method, this function does not use caching and therefore accepts replacements as dictionaries directly, simplifying its use for dynamic or runtime-defined pseudonyms.
+
+```bash
+text = "Melissa works at Google and drives a Tesla."
+labels = ("person", "company", "car")
+custom_replacements = {
+    "person": "Alice",
+    "company": "OpenAI",
+    "car": ("Honda", "Toyota")
+    }
+
+result = zink.replace_with_my_data(text, labels, user_replacements=my_replacements)
+
+print(result.anonymized_text)
+# Possible Output: "Alice works as a Data Scientist at OpenAI and drives a Honda."
 ```
 
 ### Testing

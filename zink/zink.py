@@ -47,6 +47,19 @@ class Pseudonymizer:
             categories (tuple of str, optional): Only entities with these labels will be anonymized.
                 If None, ["person", "date", "location"] are anonymized.
         """
+        # Validate input parameters.
+        if text is None or text == "":
+            raise ValueError("Text must be provided for this method. For example, use `zink.redact(text='your text here')`.")
+        if placeholder is not None and not isinstance(placeholder, str):
+            raise ValueError("Placeholder must be a string.")
+        if not isinstance(text, str):
+            raise ValueError("Text must be a string. For example, use `zink.redact(text='your text here')`.")
+        if not text:
+            raise ValueError("Text cannot be empty.")
+        if categories is not None and not isinstance(categories, tuple):
+            raise ValueError("Categories must be a tuple of strings. For example, use `zink.redact(text='your text here', categories=('person', 'date'))`.")
+        if categories is not None and not all(isinstance(c, str) for c in categories):
+            raise ValueError("All categories must be strings.")
         # Step 1: Extract entities and merge adjacent ones.
         self.text = text
         entities = self.extractor.predict(self.text, labels = categories)
@@ -87,6 +100,90 @@ class Pseudonymizer:
         Returns:
             PseudonymizationResult: A structured result with original text, pseudonymized text, etc.
         """
+        # Validate input parameters.
+        if text is None or text == "":
+            raise ValueError("Text must be provided for this method. For example, use `replace(text='your text here')`.")
+        if user_replacements is not None:
+            raise ValueError("`user_replacements` are not supported in this method. "
+                            "Please use `replace_with_my_data` instead.")
+        if not isinstance(text, str):
+            raise ValueError("Text must be a string.")
+        if not text:
+            raise ValueError("Text cannot be empty.")
+        if categories is not None and not isinstance(categories, tuple):
+            raise ValueError("Categories must be a tuple of strings. For example, use `replace(text='your text here', categories=('person', 'date'))`.")
+        if categories is not None and not all(isinstance(c, str) for c in categories):
+            raise ValueError("All categories must be strings.")
+        if ensure_consistency and not isinstance(ensure_consistency, bool):
+            raise ValueError("Ensure consistency must be a boolean.")
+
+        self.text = text
+        # Step 1: Extract entities and merge adjacent ones.
+        entities = self.extractor.predict(self.text, labels = categories)
+        self.merged_entities = self.merger.merge(entities, self.text)
+        
+        # If categories are provided, filter to only include those entities.
+        if categories is not None:
+            categories = [c.lower() for c in categories]
+            self.merged_entities = [e for e in self.merged_entities if e['label'].lower() in categories]
+        
+        # Step 2: Replace entities.
+        if ensure_consistency:
+            # Ensure consistency in replacements.
+            pseudonymized_text = self.replacer.replace_entities_ensure_consistency(self.merged_entities, self.text, user_replacements)
+        else:
+            # Use the default replacement strategy.
+            pseudonymized_text = self.replacer.replace_entities(self.merged_entities, self.text, user_replacements)
+        
+        # Build and return a structured result.
+        return PseudonymizationResult(
+            original_text=self.text,
+            anonymized_text=pseudonymized_text,
+            replacements=self.merged_entities,  # Additional details if needed.
+            features={"num_replacements": len(self.merged_entities)}
+        )
+    
+    def replace_with_my_data(self, text = "",categories=None, user_replacements=None, ensure_consistency=True):
+        """
+        Find and Replace categories in given text.
+        
+        Parameters:
+            text (str): The input text.
+            categories (tuple of str, optional): Only entities with these labels will be anonymized.
+                If None, all detected entities are anonymized.
+            user_replacements (dict, optional): A dictionary of user-defined replacements for specific entity labels.
+                If provided, these will override the JSON-based mappings.
+        
+        Returns:
+            PseudonymizationResult: A structured result with original text, pseudonymized text, etc.
+        """
+        if user_replacements is None:
+            raise ValueError("User replacements must be provided for this method. For example, use `replace_with_my_data(text='your text here', user_replacements={'person': 'John'})`.")
+        if not isinstance(user_replacements, dict):
+            raise ValueError("User replacements must be a dictionary. For example, use `replace_with_my_data(text='your text here', user_replacements={'person': 'John'})`.")
+        if not user_replacements:
+            raise ValueError("User replacements dictionary cannot be empty. For example, use `replace_with_my_data(text='your text here', user_replacements={'person': 'John'})`.")
+        if text == "":
+            raise ValueError("Text must be provided for this method. For example, use `replace_with_my_data(text='your text here', user_replacements={'person': 'John'})`.")
+        if not isinstance(text, str):
+            raise ValueError("Text must be a string. For example, use `replace_with_my_data(text='your text here', user_replacements={'person': 'John'})`.")
+        if not text:
+            raise ValueError("Text cannot be empty. For example, use `replace_with_my_data(text='your text here', user_replacements={'person': 'John'})`.")
+        if categories is not None and not isinstance(categories, tuple):
+            raise ValueError("Categories must be a tuple of strings. For example, use `replace_with_my_data(text='your text here', user_replacements={'person': 'John'}, categories=('person', 'date'))`.")
+        if categories is not None and not all(isinstance(c, str) for c in categories):
+            raise ValueError("All categories must be strings. For example, use `replace_with_my_data(text='your text here', user_replacements={'person': 'John'}, categories=('person', 'date'))`.")
+        if ensure_consistency and not isinstance(ensure_consistency, bool):
+            raise ValueError("Ensure consistency must be a boolean. For example, use `replace_with_my_data(text='your text here', user_replacements={'person': 'John'},")
+        
+        allowed_types = (str, list, tuple)
+        for key, value in user_replacements.items():
+            if not isinstance(value := user_replacements[key], allowed_types):
+                raise TypeError(
+                    f"Invalid type for key '{key}': expected str, list, or tuple, "
+                    f"got {type(value).__name__} instead."
+                )
+        
         self.text = text
         # Step 1: Extract entities and merge adjacent ones.
         entities = self.extractor.predict(self.text, labels = categories)
@@ -134,5 +231,13 @@ def redact(text, categories=None, placeholder=None):
         text=text,
         categories=categories,
         placeholder=placeholder
+    )
+
+def replace_with_my_data(text, categories=None, user_replacements=None, ensure_consistency=True):
+    return _default_instance.replace_with_my_data(
+        text=text,
+        categories=categories,
+        user_replacements=user_replacements,
+        ensure_consistency=ensure_consistency
     )
 # This allows users to call `replace` and `redact` directly without needing to instantiate the class.
