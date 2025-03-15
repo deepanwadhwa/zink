@@ -77,7 +77,7 @@ custom_replacements = {
     "car": ("Honda", "Toyota")
     }
 
-result = zink.replace_with_my_data(text, labels, user_replacements=my_replacements)
+result = zink.replace_with_my_data(text, labels, user_replacements=custom_replacements)
 
 print(result.anonymized_text)
 # Possible Output: "Alice works at OpenAI and drives a Honda."
