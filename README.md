@@ -89,6 +89,9 @@ To run the tests, navigate to the project directory and execute:
 ```bash
 pytest
 ```
+### Citation
+If you are using this package for your work/research, use the below citation:
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15035072.svg)](https://doi.org/10.5281/zenodo.15035072)
 
 ### Contributing
 Contributions are welcome! Please feel free to submit pull requests or open issues to suggest improvements or report bugs.   
