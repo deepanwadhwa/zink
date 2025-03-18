@@ -1,5 +1,6 @@
-# ZINK (Zero-shot Ink)
-
+<div align="center">
+  <h1>ZINK (Zero-shot Ink)</h1>
+</div>
 ZINK is a Python package designed for zero-shot anonymization of entities within unstructured text data. It allows you to redact or replace sensitive information based on specified entity labels.
 
 ## Description
@@ -82,6 +83,26 @@ result = zink.replace_with_my_data(text, labels, user_replacements=custom_replac
 print(result.anonymized_text)
 # Possible Output: "Alice works at OpenAI and drives a Honda."
 ```
+
+### Faker Integration
+Zink now leverages the [Faker](https://faker.readthedocs.io/) library to generate realistic, synthetic replacements for sensitive information. This feature is relatively new and continues to evolve, enhancing our data masking capabilities while preserving contextual plausibility.
+
+#### How Faker Is Utilized
+Dynamic Data Generation:
+Faker is used to generate replacement values for various entity types (e.g., names, addresses, dates). For example, when a human name is detected, Faker can provide a full name or first name based on context.
+
+#### Country and Location Handling:
+Our tool reads a list of country names (and their synonyms) from an external file. If a location entity matches one of these names, the system selects a different country from the list to mask the sensitive geographical data.
+
+#### Date Replacement:
+Date-related entities (such as dates, months, and days) are delegated to a dedicated strategy. For purely numeric dates (e.g., "12/02/1975"), the tool returns a Faker-generated date. For dates with explicit alphabetic month names, custom extraction and replacement logic is applied.
+
+#### Human Entity Roles:
+The system differentiates between various human roles (e.g., doctor, patient, engineer) using a predefined list of human entity roles. This allows for context-aware replacement, ensuring that names are replaced appropriately according to their role in the text.
+
+#### Current Status and Future Improvements
+##### New Feature in Beta:
+The Faker integration is one of our latest features, designed to deliver more natural and contextually relevant data replacements. While the current implementation covers many common cases, it is still under active development.
 
 ### Testing
 To run the tests, navigate to the project directory and execute:

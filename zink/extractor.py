@@ -1,4 +1,6 @@
 from gliner import GLiNER
+import warnings
+warnings.filterwarnings("ignore")
 
 class EntityExtractor:
     def __init__(self, model_name="numind/NuNerZero"):
@@ -21,3 +23,5 @@ class EntityExtractor:
         else:
             labels = self.labels
         return self.model.predict_entities(text, labels)
+    
+_DEFAULT_EXTRACTOR = EntityExtractor()
