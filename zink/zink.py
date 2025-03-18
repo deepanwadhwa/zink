@@ -1,4 +1,5 @@
-from .extractor import EntityExtractor
+# from .extractor import EntityExtractor
+from .extractor import _DEFAULT_EXTRACTOR
 from .merger import EntityMerger
 from .replacer import EntityReplacer
 from .result import PseudonymizationResult  # Assume you defined this dataclass
@@ -7,7 +8,7 @@ warnings.filterwarnings("ignore")
 from functools import lru_cache
 # Instantiate default components at module load time.
 
-_DEFAULT_EXTRACTOR = EntityExtractor()
+# _DEFAULT_EXTRACTOR = EntityExtractor()
 _DEFAULT_MERGER = EntityMerger()
 
 
