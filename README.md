@@ -3,6 +3,10 @@
 </div>
 ZINK is a Python package designed for zero-shot anonymization of entities within unstructured text data. It allows you to redact or replace sensitive information based on specified entity labels.
 
+## Update
+With version >=0.4, we are moving from simple NER models to their onnx versions. I hope you enjoy the acceleration gains. The package will download the onnx version of the 
+underlying model(s) when you update.
+
 ## Description
 
 In today's data-driven world, protecting sensitive information is paramount. ZINK provides a simple and effective solution for anonymizing text data by identifying and masking entities such as names, ages, phone numbers, medical conditions, and more. With ZINK, you can ensure data privacy while still maintaining the utility of your text data for analysis and processing.
@@ -83,6 +87,10 @@ result = zink.replace_with_my_data(text, labels, user_replacements=custom_replac
 print(result.anonymized_text)
 # Possible Output: "Alice works at OpenAI and drives a Honda."
 ```
+## Underlying components:
+
+### Thank you, [NuNer](https://huggingface.co/numind/NuNER_Zero):
+NuNerZero is a compact, zero-shot Named Entity Recognition model that leverages the robust GLiNER architecture for efficient token classification. It requires lower-cased labels and processes inputs as a concatenation of entity types and text, enabling it to detect arbitrarily long entities. Trained on the NuNER v2.0 dataset, NuNerZero achieves impressive performance, outperforming larger models like GLiNER-large-v2.1 by over 3% in token-level F1-score. This model is ideal for both research and practical applications where a streamlined, high-accuracy NER solution is essential.
 
 ### Faker Integration
 Zink now leverages the [Faker](https://faker.readthedocs.io/) library to generate realistic, synthetic replacements for sensitive information. This feature is relatively new and continues to evolve, enhancing our data masking capabilities while preserving contextual plausibility.

@@ -3,8 +3,8 @@ import warnings
 warnings.filterwarnings("ignore")
 
 class EntityExtractor:
-    def __init__(self, model_name="numind/NuNerZero"):
-        self.model = GLiNER.from_pretrained(model_name)
+    def __init__(self, model_name="deepanwa/NuNerZero_onnx"): #previous model - numind/NuNerZero
+        self.model = GLiNER.from_pretrained(model_name,load_onnx_model=True, load_tokenizer=True)
         # NuZero requires lower-cased labels.
         self.labels = ["person", "date", "location"]
 
