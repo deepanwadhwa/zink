@@ -1,6 +1,6 @@
-
 import random
 from .base import ReplacementStrategy
+
 
 class FixedReplacementStrategy(ReplacementStrategy):
     def __init__(self, fixed_value):
@@ -12,4 +12,3 @@ class FixedReplacementStrategy(ReplacementStrategy):
 
     def replace(self, entity):
         return random.choice(self.fixed_values)
-

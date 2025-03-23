@@ -4,6 +4,7 @@ import pickle
 with open("medical_conditions_automaton.pkl", "rb") as f:
     automaton = pickle.load(f)
 
+
 def longest_match(text):
     longest = ""
     # Iterate over all matches in the text using the loaded automaton
