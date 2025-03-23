@@ -193,7 +193,7 @@ COUNTRIES_SYNONYMS = {
     "vietnam": [],
     "yemen": [],
     "zambia": [],
-    "zimbabwe": []
+    "zimbabwe": [],
 }
 
 human_entity_roles = [
@@ -230,6 +230,5 @@ human_entity_roles = [
     "electrician",
     "mechanic",
     "consultant",
-    "analyst"
+    "analyst",
 ]
-

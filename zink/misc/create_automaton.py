@@ -7,7 +7,7 @@ input_file = "codes.csv"
 
 # Read the CSV file and extract the description column (assumed at index 3)
 descriptions = []
-with open(input_file, newline='', encoding="utf-8") as f:
+with open(input_file, newline="", encoding="utf-8") as f:
     reader = csv.reader(f)
     for row in reader:
         # Check that the row has at least 4 columns

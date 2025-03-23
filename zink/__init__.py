@@ -1,2 +1,3 @@
+from .zink import redact, replace, replace_with_my_data
 
-from .zink import *
+__all__ = ["redact", "replace", "replace_with_my_data"]

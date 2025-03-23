@@ -6,22 +6,86 @@ from .rdate import DateReplacementStrategy
 from .rperson import PersonReplacementStrategy
 from .vars import COUNTRIES_SYNONYMS, human_entity_roles
 import random
+
 # Read country names from file.
-COUNTRY_NAMES = {name for country, synonyms in COUNTRIES_SYNONYMS.items() for name in [country] + synonyms}
+COUNTRY_NAMES = {
+    name
+    for country, synonyms in COUNTRIES_SYNONYMS.items()
+    for name in [country] + synonyms
+}
 
 # Define which labels are considered date-related.
 DATE_LABELS = {
-    "date", "month", "month name", "monthname", "day of week", "day_of_week", "weekday"
+    "date",
+    "month",
+    "month name",
+    "monthname",
+    "day of week",
+    "day_of_week",
+    "weekday",
 }
 
+
 class FakerOrJsonReplacementStrategy:
+    """
+    Replaces entities using Faker, JSON mappings, or default strategies.
+
+    This class provides a flexible replacement strategy that prioritizes
+    using Faker methods when available, falls back to JSON mappings if
+    `use_json_mapping` is True, and finally uses a default replacement
+    strategy if no other method is successful.  It also handles specific
+    cases for dates and locations.
+
+    :param label: The entity label (e.g., "person", "location", "date").
+        This will be converted to lowercase.
+
+    :type label: str
+
+    :param use_json_mapping: Whether to use JSON-based mappings as a
+        fallback if Faker cannot generate a replacement.
+
+    :type use_json_mapping: bool
+    """
     def __init__(self, label, use_json_mapping):
+        """
+        Initializes the FakerOrJsonReplacementStrategy.
+        """
         # Normalize the label and initialize Faker.
         self.label = label.lower()
         self.faker = Faker()
         self.use_json_mapping = use_json_mapping
 
     def replace(self, entity):
+        """
+        Replaces the given entity with a pseudonym.
+
+        This method attempts to replace the entity's text using the
+        following strategies, in order:
+
+        1.  Date Replacement: If the label is date-related, uses
+            `DateReplacementStrategy`.
+        2.  Country Replacement: If the label is "location" and the text
+            is a recognized country name, replaces it with a different
+            country name.
+        3.  Person Replacement: If the label is a person-related role
+            (e.g., "doctor", "nurse"), uses `PersonReplacementStrategy`.
+        4.  Faker Method: If Faker has a method matching the label (e.g.,
+            `faker.address()` for the label "address"), uses that method.
+        5.  Faker Person/Location: As a special case, if the label is "person" it tries to use `self.faker.name()`. If the label is
+            "location", it tries using `self.faker.city()`
+        6.  Fallback: If none of the above work, uses either
+            `JsonMappingReplacementStrategy` (if `use_json_mapping` is
+            True) or `DefaultReplacementStrategy`.
+
+        :param entity: A dictionary representing the entity, containing
+            at least a "text" key.
+        :type entity: dict
+        :return: A tuple containing the replacement text and a string
+            indicating which strategy was used (e.g., "faker", "json",
+            "default", "rdate", "faker_country", "rperson").
+        :rtype: tuple(str, str)
+
+        """
         original_text = entity.get("text", "").strip()
 
         # Delegate all date-related labels to DateReplacementStrategy.
@@ -39,7 +103,9 @@ class FakerOrJsonReplacementStrategy:
 
         # Delegate person-related labels to PersonReplacementStrategy.
         if self.label in human_entity_roles:
-            fake_value = PersonReplacementStrategy().replace(entity, original_label=self.label)
+            fake_value = PersonReplacementStrategy().replace(
+                entity, original_label=self.label
+            )
             if fake_value.strip() != original_text:
                 return fake_value, "rperson"
 
@@ -74,6 +140,18 @@ class FakerOrJsonReplacementStrategy:
         return self._fallback(entity)
 
     def _fallback(self, entity):
+        """
+        Provides a fallback replacement strategy.
+
+        This method is called if no other replacement strategy is
+        successful.  It uses either `JsonMappingReplacementStrategy` (if
+        `use_json_mapping` is True) or `DefaultReplacementStrategy`.
+
+        :param entity: A dictionary representing the entity.
+        :type entity: dict
+        :return: The replacement text from the fallback strategy.
+        :rtype: str
+        """
         if self.use_json_mapping:
             replacement = JsonMappingReplacementStrategy(self.label).replace(entity)
             return replacement, "json"

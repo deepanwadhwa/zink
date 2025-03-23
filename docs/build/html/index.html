@@ -1,0 +1,282 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="[en]" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to Zink&#39;s documentation! &mdash; Zink 0.4.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=dcb71b8d"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Reference" href="api.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            Zink
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">Zink</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Welcome to Zink's documentation!</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="welcome-to-zink-s-documentation">
+<h1>Welcome to Zink's documentation!<a class="headerlink" href="#welcome-to-zink-s-documentation" title="Link to this heading"></a></h1>
+<section id="zink-zero-shot-ink">
+<h2>ZINK (Zero-shot Ink)<a class="headerlink" href="#zink-zero-shot-ink" title="Link to this heading"></a></h2>
+<p>ZINK is a Python package designed for zero-shot anonymization of entities within unstructured text data. It allows you to redact or replace sensitive information based on specified entity labels.</p>
+</section>
+<section id="update">
+<h2>Update<a class="headerlink" href="#update" title="Link to this heading"></a></h2>
+<p>With version &gt;=0.4, we are moving from simple NER models to their onnx versions. I hope you enjoy the acceleration gains. The package will download the onnx version of the underlying model(s) when you update.</p>
+</section>
+<section id="description">
+<h2>Description<a class="headerlink" href="#description" title="Link to this heading"></a></h2>
+<p>In today's data-driven world, protecting sensitive information is paramount. ZINK provides a simple and effective solution for anonymizing text data by identifying and masking entities such as names, ages, phone numbers, medical conditions, and more. With ZINK, you can ensure data privacy while still maintaining the utility of your text data for analysis and processing.</p>
+<p>ZINK leverages the power of zero-shot techniques, meaning it doesn't require prior training on specific datasets. You simply provide the text and the entity labels you want to anonymize, and ZINK handles the rest.</p>
+</section>
+<section id="features">
+<h2>Features<a class="headerlink" href="#features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Zero-shot anonymization:</strong> No training data or pre-trained models required.</p></li>
+<li><p><strong>Flexible entity labeling:</strong> Anonymize any type of entity by specifying custom labels.</p></li>
+<li><p><strong>Redaction and replacement:</strong> Choose between redacting entities (replacing them with <code class="docutils literal notranslate"><span class="pre">[LABEL]_REDACTED</span></code>) or replacing them with a generic placeholder.</p></li>
+<li><p><strong>Easy integration:</strong> Simple and intuitive API for seamless integration into your Python projects.</p></li>
+</ul>
+</section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>zink
+</pre></div>
+</div>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<section id="redacting-entities">
+<h3>Redacting Entities<a class="headerlink" href="#redacting-entities" title="Link to this heading"></a></h3>
+<p>The redact function replaces identified entities with <code class="docutils literal notranslate"><span class="pre">[LABEL]_REDACTED</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">zink</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pss</span>
+
+<span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;John works as a doctor and plays football after work and drives a toyota.&quot;</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;person&quot;</span><span class="p">,</span> <span class="s2">&quot;profession&quot;</span><span class="p">,</span> <span class="s2">&quot;sport&quot;</span><span class="p">,</span> <span class="s2">&quot;car&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">pss</span><span class="o">.</span><span class="n">redact</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">anonymized_text</span><span class="p">)</span>
+<span class="c1"># Example output:</span>
+<span class="c1"># person_REDACTED works as a profession_REDACTED and plays sport_REDACTED after work and drives a car_REDACTED.</span>
+</pre></div>
+</div>
+</section>
+<section id="replacing-entities">
+<h3>Replacing Entities<a class="headerlink" href="#replacing-entities" title="Link to this heading"></a></h3>
+<p>The replace function replaces identified entities with a random entity of the same type.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">zink</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pss</span>
+
+<span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;John Doe dialled his mother at 992-234-3456 and then went out for a walk.&quot;</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;person&quot;</span><span class="p">,</span> <span class="s2">&quot;phone number&quot;</span><span class="p">,</span> <span class="s2">&quot;relationship&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">pss</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">anonymized_text</span><span class="p">)</span>
+
+<span class="c1"># Possible output: Warren Buffet dialled his Uncle at 2347789287 and then went out for a walk.</span>
+</pre></div>
+</div>
+<p>Another example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">zink</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pss</span>
+
+<span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;Patient, 33 years old, was admitted with a chest pain&quot;</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;age&quot;</span><span class="p">,</span> <span class="s2">&quot;medical condition&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">pss</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">anonymized_text</span><span class="p">)</span>
+<span class="c1"># Example output:</span>
+<span class="c1"># Patient, 78 years old, was admitted with a Diabetes Mellitus.</span>
+</pre></div>
+</div>
+</section>
+<section id="replacing-entities-with-your-own-data">
+<h3>Replacing Entities with your own data<a class="headerlink" href="#replacing-entities-with-your-own-data" title="Link to this heading"></a></h3>
+<p>This feature is for the scenario when you want to replace entities with your own dataset. Unlike the standard replace method, this function does not use caching and therefore accepts replacements as dictionaries directly, simplifying its use for dynamic or runtime-defined pseudonyms.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;Melissa works at Google and drives a Tesla.&quot;</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;person&quot;</span><span class="p">,</span> <span class="s2">&quot;company&quot;</span><span class="p">,</span> <span class="s2">&quot;car&quot;</span><span class="p">)</span>
+<span class="n">custom_replacements</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;person&quot;</span><span class="p">:</span> <span class="s2">&quot;Alice&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;company&quot;</span><span class="p">:</span> <span class="s2">&quot;OpenAI&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;car&quot;</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;Honda&quot;</span><span class="p">,</span> <span class="s2">&quot;Toyota&quot;</span><span class="p">)</span>
+    <span class="p">}</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">zink</span><span class="o">.</span><span class="n">replace_with_my_data</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">user_replacements</span><span class="o">=</span><span class="n">custom_replacements</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">anonymized_text</span><span class="p">)</span>
+<span class="c1"># Possible Output: &quot;Alice works at OpenAI and drives a Honda.&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="underlying-components">
+<h2>Underlying components<a class="headerlink" href="#underlying-components" title="Link to this heading"></a></h2>
+<section id="thank-you-nuner">
+<h3>Thank you, <a class="reference external" href="https://huggingface.co/numind/NuNER_Zero">NuNer</a><a class="headerlink" href="#thank-you-nuner" title="Link to this heading"></a></h3>
+<p>NuNerZero is a compact, zero-shot Named Entity Recognition model that leverages the robust GLiNER architecture for efficient token classification. It requires lower-cased labels and processes inputs as a concatenation of entity types and text, enabling it to detect arbitrarily long entities. Trained on the NuNER v2.0 dataset, NuNerZero achieves impressive performance, outperforming larger models like GLiNER-large-v2.1 by over 3% in token-level F1-score. This model is ideal for both research and practical applications where a streamlined, high-accuracy NER solution is essential.</p>
+</section>
+<section id="faker-integration">
+<h3>Faker Integration<a class="headerlink" href="#faker-integration" title="Link to this heading"></a></h3>
+<p>Zink now leverages the <a class="reference external" href="https://faker.readthedocs.io/">Faker</a> library to generate realistic, synthetic replacements for sensitive information. This feature is relatively new and continues to evolve, enhancing our data masking capabilities while preserving contextual plausibility.</p>
+<section id="how-faker-is-utilized">
+<h4>How Faker Is Utilized<a class="headerlink" href="#how-faker-is-utilized" title="Link to this heading"></a></h4>
+<p><strong>Dynamic Data Generation:</strong> Faker is used to generate replacement values for various entity types (e.g., names, addresses, dates). For example, when a human name is detected, Faker can provide a full name or first name based on context.</p>
+<p><strong>Country and Location Handling:</strong> Our tool reads a list of country names (and their synonyms) from an external file. If a location entity matches one of these names, the system selects a different country from the list to mask the sensitive geographical data.</p>
+<p><strong>Date Replacement:</strong> Date-related entities (such as dates, months, and days) are delegated to a dedicated strategy. For purely numeric dates (e.g., &quot;12/02/1975&quot;), the tool returns a Faker-generated date. For dates with explicit alphabetic month names, custom extraction and replacement logic is applied.</p>
+<p><strong>Human Entity Roles:</strong> The system differentiates between various human roles (e.g., doctor, patient, engineer) using a predefined list of human entity roles. This allows for context-aware replacement, ensuring that names are replaced appropriately according to their role in the text.</p>
+</section>
+<section id="current-status-and-future-improvements">
+<h4>Current Status and Future Improvements<a class="headerlink" href="#current-status-and-future-improvements" title="Link to this heading"></a></h4>
+<p><strong>New Feature in Beta:</strong> The Faker integration is one of our latest features, designed to deliver more natural and contextually relevant data replacements. While the current implementation covers many common cases, it is still under active development.</p>
+</section>
+</section>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<p>To run the tests, navigate to the project directory and execute:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pytest
+</pre></div>
+</div>
+</section>
+<section id="citation">
+<h2>Citation<a class="headerlink" href="#citation" title="Link to this heading"></a></h2>
+<p>If you are using this package for your work/research, use the below citation:</p>
+<p><a class="reference external" href="https://zenodo.org/badge/DOI/10.5281/zenodo.15035072.svg">DOI</a></p>
+<p>Wadhwa, D. (2025). ZINK: Zero-shot anonymization in unstructured text. (v0.2.1). Zenodo. <a class="reference external" href="https://doi.org/10.5281/zenodo.15035072">https://doi.org/10.5281/zenodo.15035072</a></p>
+</section>
+<section id="contributing">
+<h2>Contributing<a class="headerlink" href="#contributing" title="Link to this heading"></a></h2>
+<p>Contributions are welcome! Please feel free to submit pull requests or open issues to suggest improvements or report bugs.</p>
+<p>Here's the recommended workflow:</p>
+<ol class="arabic">
+<li><p>Fork the repository on GitHub (or your hosting platform).</p></li>
+<li><p>Create a new branch for your feature or bugfix:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>feature/your-feature-name
+</pre></div>
+</div>
+<p>(Use a descriptive branch name, e.g., <cite>fix/docstring-typos</cite>, <cite>feature/add-new-replacer</cite>).</p>
+</li>
+<li><p>Make your changes, including tests and documentation updates.</p></li>
+<li><p>Commit your changes with a clear and concise commit message:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Fix: Correct typos in docstrings&quot;</span>
+</pre></div>
+</div>
+<p>(See [<a class="reference external" href="https://chris.beams.io/posts/git-commit/](https://chris.beams.io/posts/git-commit/">https://chris.beams.io/posts/git-commit/](https://chris.beams.io/posts/git-commit/</a>) for a guide on writing good commit messages.)</p>
+</li>
+<li><p>Push your branch to your forked repository:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>feature/your-feature-name
+</pre></div>
+</div>
+</li>
+<li><p>Submit a pull request from your branch to the <cite>main</cite> branch (or <cite>master</cite>, or whatever your main development branch is called) of the original repository.</p></li>
+<li><p>Please provide a description of your changes when you submit your pull request.</p></li>
+</ol>
+<p>Before submitting, please make sure to:</p>
+<ul class="simple">
+<li><p>Run the tests: <cite>pytest</cite></p></li>
+<li><p>Check for code style issues: <cite>ruff check .</cite></p></li>
+<li><p>Build the documentation: <cite>make html</cite> (from the <cite>docs</cite> directory)</p></li>
+</ul>
+<p>We appreciate your contributions!</p>
+</section>
+<section id="license">
+<h2>License<a class="headerlink" href="#license" title="Link to this heading"></a></h2>
+<p>This project is licensed under the Apache 2.0 License.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-zink.zink">Main Module (<cite>zink.zink</cite>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-zink.extractor">Extractor Module (<cite>zink.extractor</cite>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-zink.merger">Merger Module (<cite>zink.merger</cite>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-zink.result">Result Module (<cite>zink.result</cite>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-zink.replacer">Replacer Subpackage (<cite>zink.replacer</cite>)</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="api.html" class="btn btn-neutral float-right" title="API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Deepan Wadhwa.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -3,14 +3,16 @@ from faker import Faker
 from .base import ReplacementStrategy
 from ..extractor import _DEFAULT_EXTRACTOR
 
+
 class PersonReplacementStrategy(ReplacementStrategy):
     """
     Replacement strategy for person-related entities.
     This strategy uses the Faker library to generate realistic names.
-    
+
     Attributes:
         faker (Faker): An instance of the Faker class for generating names.
     """
+
     def __init__(self):
         self.faker = Faker()
 

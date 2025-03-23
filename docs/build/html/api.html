@@ -1,0 +1,443 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="[en]" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Reference &mdash; Zink 0.4.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=dcb71b8d"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Welcome to Zink&#39;s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Zink
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-zink.zink">Main Module (<cite>zink.zink</cite>)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#zink.zink.Pseudonymizer"><code class="docutils literal notranslate"><span class="pre">Pseudonymizer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#zink.zink.Pseudonymizer.redact"><code class="docutils literal notranslate"><span class="pre">Pseudonymizer.redact()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#zink.zink.Pseudonymizer.replace"><code class="docutils literal notranslate"><span class="pre">Pseudonymizer.replace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#zink.zink.Pseudonymizer.replace_with_my_data"><code class="docutils literal notranslate"><span class="pre">Pseudonymizer.replace_with_my_data()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#zink.zink.redact"><code class="docutils literal notranslate"><span class="pre">redact()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#zink.zink.replace"><code class="docutils literal notranslate"><span class="pre">replace()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#zink.zink.replace_with_my_data"><code class="docutils literal notranslate"><span class="pre">replace_with_my_data()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-zink.extractor">Extractor Module (<cite>zink.extractor</cite>)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#zink.extractor.EntityExtractor"><code class="docutils literal notranslate"><span class="pre">EntityExtractor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#zink.extractor.EntityExtractor.predict"><code class="docutils literal notranslate"><span class="pre">EntityExtractor.predict()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-zink.merger">Merger Module (<cite>zink.merger</cite>)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#zink.merger.EntityMerger"><code class="docutils literal notranslate"><span class="pre">EntityMerger</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#zink.merger.EntityMerger.merge"><code class="docutils literal notranslate"><span class="pre">EntityMerger.merge()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-zink.result">Result Module (<cite>zink.result</cite>)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#zink.result.PseudonymizationResult"><code class="docutils literal notranslate"><span class="pre">PseudonymizationResult</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#zink.result.PseudonymizationResult.anonymized_text"><code class="docutils literal notranslate"><span class="pre">PseudonymizationResult.anonymized_text</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#zink.result.PseudonymizationResult.features"><code class="docutils literal notranslate"><span class="pre">PseudonymizationResult.features</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#zink.result.PseudonymizationResult.original_text"><code class="docutils literal notranslate"><span class="pre">PseudonymizationResult.original_text</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#zink.result.PseudonymizationResult.replacements"><code class="docutils literal notranslate"><span class="pre">PseudonymizationResult.replacements</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#zink.result.ReplacementDetail"><code class="docutils literal notranslate"><span class="pre">ReplacementDetail</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#zink.result.ReplacementDetail.end"><code class="docutils literal notranslate"><span class="pre">ReplacementDetail.end</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#zink.result.ReplacementDetail.label"><code class="docutils literal notranslate"><span class="pre">ReplacementDetail.label</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#zink.result.ReplacementDetail.original"><code class="docutils literal notranslate"><span class="pre">ReplacementDetail.original</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#zink.result.ReplacementDetail.pseudonym"><code class="docutils literal notranslate"><span class="pre">ReplacementDetail.pseudonym</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#zink.result.ReplacementDetail.score"><code class="docutils literal notranslate"><span class="pre">ReplacementDetail.score</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#zink.result.ReplacementDetail.start"><code class="docutils literal notranslate"><span class="pre">ReplacementDetail.start</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-zink.replacer">Replacer Subpackage (<cite>zink.replacer</cite>)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#zink.replacer.EntityReplacer"><code class="docutils literal notranslate"><span class="pre">EntityReplacer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#zink.replacer.EntityReplacer.replace_entities"><code class="docutils literal notranslate"><span class="pre">EntityReplacer.replace_entities()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#zink.replacer.EntityReplacer.replace_entities_ensure_consistency"><code class="docutils literal notranslate"><span class="pre">EntityReplacer.replace_entities_ensure_consistency()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Zink</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">API Reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/api.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="api-reference">
+<h1>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h1>
+<p>This section provides detailed information about the classes and functions provided by Zink.</p>
+<section id="module-zink.zink">
+<span id="main-module-zink-zink"></span><h2>Main Module (<cite>zink.zink</cite>)<a class="headerlink" href="#module-zink.zink" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zink.zink.Pseudonymizer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zink.zink.</span></span><span class="sig-name descname"><span class="pre">Pseudonymizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_json_mapping</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extractor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replacer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/zink.html#Pseudonymizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.zink.Pseudonymizer" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Pseudonymizes text by replacing sensitive entities.</p>
+<p>This class provides three methods to deal with sensitive entities:
+Redact - replaces sensitive entities with a placeholder.
+Replace - replaces sensitive entities with pseudonyms.
+Replace with your own data - replaces sensitive entities with user-defined pseudonyms.
+It supports custom user-defined replacements and JSON-based mappings for entity replacement.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>user_replacements</strong> (<em>dict</em><em>, </em><em>optional</em>) -- A dictionary of user-defined replacements for specific entity labels.
+If provided, these will override the JSON-based mappings.</p></li>
+<li><p><strong>use_json_mapping</strong> (<em>bool</em><em>, </em><em>optional</em>) -- If True, use JSON-based mappings for entity replacement.
+If False, only use user-defined replacements.</p></li>
+<li><p><strong>extractor</strong> (<a class="reference internal" href="#zink.extractor.EntityExtractor" title="zink.extractor.EntityExtractor"><em>EntityExtractor</em></a><em>, </em><em>optional</em>) -- An instance of EntityExtractor for extracting entities from text.
+If None, a default extractor will be used.</p></li>
+<li><p><strong>merger</strong> (<a class="reference internal" href="#zink.merger.EntityMerger" title="zink.merger.EntityMerger"><em>EntityMerger</em></a><em>, </em><em>optional</em>) -- An instance of EntityMerger for merging adjacent entities.
+If None, a default merger will be used.</p></li>
+<li><p><strong>replacer</strong> (<a class="reference internal" href="#zink.replacer.EntityReplacer" title="zink.replacer.EntityReplacer"><em>EntityReplacer</em></a><em>, </em><em>optional</em>) -- An instance of EntityReplacer for replacing entities with pseudonyms.
+If None, a default replacer will be used.</p></li>
+<li><p><strong>text</strong> (<em>str</em>) -- The input text to be pseudonymized.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="zink.zink.Pseudonymizer.redact">
+<span class="sig-name descname"><span class="pre">redact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">placeholder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/zink.html#Pseudonymizer.redact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.zink.Pseudonymizer.redact" title="Link to this definition"></a></dt>
+<dd><p>Find and Redact categories in given text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) -- The input text.</p></li>
+<li><p><strong>categories</strong> (<em>tuple</em><em> of </em><em>str</em><em>, </em><em>optional</em>) -- Only entities with these labels will be anonymized.
+If None, [&quot;person&quot;, &quot;date&quot;, &quot;location&quot;] are anonymized.</p></li>
+<li><p><strong>placeholder</strong> (<em>str</em><em>, </em><em>optional</em>) -- The placeholder string to replace the sensitive entities with.
+Example: &quot;REDACTED&quot; or &quot;$$$&quot;.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zink.zink.Pseudonymizer.replace">
+<span class="sig-name descname"><span class="pre">replace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_replacements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ensure_consistency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/zink.html#Pseudonymizer.replace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.zink.Pseudonymizer.replace" title="Link to this definition"></a></dt>
+<dd><p>Find and Replace categories in given text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) -- The input text.</p></li>
+<li><p><strong>categories</strong> (<em>tuple</em><em> of </em><em>str</em><em>, </em><em>optional</em>) -- Only entities with these labels will be anonymized.
+If None, all detected entities are anonymized.</p></li>
+<li><p><strong>user_replacements</strong> (<em>dict</em><em>, </em><em>optional</em>) -- A dictionary of user-defined replacements for specific entity labels.
+If provided, these will override the Faker/JSON-based mappings.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A structured result with original text, pseudonymized text, etc.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#zink.result.PseudonymizationResult" title="zink.result.PseudonymizationResult">PseudonymizationResult</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zink.zink.Pseudonymizer.replace_with_my_data">
+<span class="sig-name descname"><span class="pre">replace_with_my_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_replacements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ensure_consistency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/zink.html#Pseudonymizer.replace_with_my_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.zink.Pseudonymizer.replace_with_my_data" title="Link to this definition"></a></dt>
+<dd><p>Find and Replace categories in given text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) -- The input text.</p></li>
+<li><p><strong>categories</strong> (<em>tuple</em><em> of </em><em>str</em><em>, </em><em>optional</em>) -- Only entities with these labels will be anonymized.
+If None, all detected entities are anonymized.</p></li>
+<li><p><strong>user_replacements</strong> (<em>dict</em><em>, </em><em>optional</em>) -- A dictionary of user-defined replacements for specific entity labels.
+If provided, these will override the JSON-based mappings.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A structured result with original text, pseudonymized text, etc.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#zink.result.PseudonymizationResult" title="zink.result.PseudonymizationResult">PseudonymizationResult</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zink.zink.redact">
+<span class="sig-prename descclassname"><span class="pre">zink.zink.</span></span><span class="sig-name descname"><span class="pre">redact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">placeholder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/zink.html#redact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.zink.redact" title="Link to this definition"></a></dt>
+<dd><p>Same method as <cite>Pseudonymizer.redact</cite>, but allows for direct usage without instantiating the class.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zink.zink.replace">
+<span class="sig-prename descclassname"><span class="pre">zink.zink.</span></span><span class="sig-name descname"><span class="pre">replace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_replacements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ensure_consistency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/zink.html#replace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.zink.replace" title="Link to this definition"></a></dt>
+<dd><p>Same method as <cite>Pseudonymizer.replace</cite>, but allows for direct usage without instantiating the class.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zink.zink.replace_with_my_data">
+<span class="sig-prename descclassname"><span class="pre">zink.zink.</span></span><span class="sig-name descname"><span class="pre">replace_with_my_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_replacements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ensure_consistency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/zink.html#replace_with_my_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.zink.replace_with_my_data" title="Link to this definition"></a></dt>
+<dd><p>Same method as <cite>Pseudonymizer.replace_with_my_data</cite>, but allows for direct usage without instantiating the class.</p>
+</dd></dl>
+
+</section>
+<section id="module-zink.extractor">
+<span id="extractor-module-zink-extractor"></span><h2>Extractor Module (<cite>zink.extractor</cite>)<a class="headerlink" href="#module-zink.extractor" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zink.extractor.EntityExtractor">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zink.extractor.</span></span><span class="sig-name descname"><span class="pre">EntityExtractor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'deepanwa/NuNerZero_onnx'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/extractor.html#EntityExtractor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.extractor.EntityExtractor" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zink.extractor.EntityExtractor.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/extractor.html#EntityExtractor.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.extractor.EntityExtractor.predict" title="Link to this definition"></a></dt>
+<dd><p>Predict entities in the given text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) -- The input text.</p></li>
+<li><p><strong>labels</strong> (<em>list</em><em> of </em><em>str</em><em>, </em><em>optional</em>) -- Only entities with these labels will be returned.
+If None, all detected entities are returned.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of dictionaries, each containing 'start', 'end', 'label', and 'text'.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-zink.merger">
+<span id="merger-module-zink-merger"></span><h2>Merger Module (<cite>zink.merger</cite>)<a class="headerlink" href="#module-zink.merger" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zink.merger.EntityMerger">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zink.merger.</span></span><span class="sig-name descname"><span class="pre">EntityMerger</span></span><a class="reference internal" href="_modules/zink/merger.html#EntityMerger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.merger.EntityMerger" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Merges entities based on their labels and positions in the text.
+This class is designed to handle entities that are close together or have the same label,
+merging them into a single entity when appropriate.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zink.merger.EntityMerger.merge">
+<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entities</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/merger.html#EntityMerger.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.merger.EntityMerger.merge" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-zink.result">
+<span id="result-module-zink-result"></span><h2>Result Module (<cite>zink.result</cite>)<a class="headerlink" href="#module-zink.result" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zink.result.PseudonymizationResult">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zink.result.</span></span><span class="sig-name descname"><span class="pre">PseudonymizationResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">original_text:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anonymized_text:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replacements:</span> <span class="pre">~typing.List[~zink.result.ReplacementDetail]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features:</span> <span class="pre">~typing.Dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/result.html#PseudonymizationResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.result.PseudonymizationResult" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Result of the pseudonymization process.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zink.result.PseudonymizationResult.anonymized_text">
+<span class="sig-name descname"><span class="pre">anonymized_text</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#zink.result.PseudonymizationResult.anonymized_text" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zink.result.PseudonymizationResult.features">
+<span class="sig-name descname"><span class="pre">features</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span></em><a class="headerlink" href="#zink.result.PseudonymizationResult.features" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zink.result.PseudonymizationResult.original_text">
+<span class="sig-name descname"><span class="pre">original_text</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#zink.result.PseudonymizationResult.original_text" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zink.result.PseudonymizationResult.replacements">
+<span class="sig-name descname"><span class="pre">replacements</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#zink.result.ReplacementDetail" title="zink.result.ReplacementDetail"><span class="pre">ReplacementDetail</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#zink.result.PseudonymizationResult.replacements" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zink.result.ReplacementDetail">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zink.result.</span></span><span class="sig-name descname"><span class="pre">ReplacementDetail</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pseudonym</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/result.html#ReplacementDetail"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.result.ReplacementDetail" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Details about the replacement of a sensitive entity.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zink.result.ReplacementDetail.end">
+<span class="sig-name descname"><span class="pre">end</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#zink.result.ReplacementDetail.end" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zink.result.ReplacementDetail.label">
+<span class="sig-name descname"><span class="pre">label</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#zink.result.ReplacementDetail.label" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zink.result.ReplacementDetail.original">
+<span class="sig-name descname"><span class="pre">original</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#zink.result.ReplacementDetail.original" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zink.result.ReplacementDetail.pseudonym">
+<span class="sig-name descname"><span class="pre">pseudonym</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#zink.result.ReplacementDetail.pseudonym" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zink.result.ReplacementDetail.score">
+<span class="sig-name descname"><span class="pre">score</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#zink.result.ReplacementDetail.score" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zink.result.ReplacementDetail.start">
+<span class="sig-name descname"><span class="pre">start</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#zink.result.ReplacementDetail.start" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-zink.replacer">
+<span id="replacer-subpackage-zink-replacer"></span><h2>Replacer Subpackage (<cite>zink.replacer</cite>)<a class="headerlink" href="#module-zink.replacer" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zink.replacer.EntityReplacer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zink.replacer.</span></span><span class="sig-name descname"><span class="pre">EntityReplacer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_json_mapping</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/replacer/replacer.html#EntityReplacer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.replacer.EntityReplacer" title="Link to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="zink.replacer.EntityReplacer.replace_entities">
+<span class="sig-name descname"><span class="pre">replace_entities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entities</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_replacements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/replacer/replacer.html#EntityReplacer.replace_entities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.replacer.EntityReplacer.replace_entities" title="Link to this definition"></a></dt>
+<dd><p>Replace entities in the text with pseudonyms, with randomized replacements.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>entities</strong> (<em>list</em><em> of </em><em>dict</em>) -- A list of dictionaries, each containing 'start', 'end', 'label', and 'text'.</p></li>
+<li><p><strong>text</strong> (<em>str</em>) -- The original text.</p></li>
+<li><p><strong>user_replacements</strong> (<em>dict</em><em>, </em><em>optional</em>) -- A dictionary of user-defined replacements for specific entity labels.
+If provided, these will override the JSON-based mappings.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The text with entities replaced by pseudonyms.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zink.replacer.EntityReplacer.replace_entities_ensure_consistency">
+<span class="sig-name descname"><span class="pre">replace_entities_ensure_consistency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entities</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_replacements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/replacer/replacer.html#EntityReplacer.replace_entities_ensure_consistency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.replacer.EntityReplacer.replace_entities_ensure_consistency" title="Link to this definition"></a></dt>
+<dd><p>Replace entities in the text with pseudonyms, ensuring consistent replacements.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>entities</strong> (<em>list</em><em> of </em><em>dict</em>) -- A list of dictionaries, each containing 'start', 'end', 'label', and 'text'.</p></li>
+<li><p><strong>text</strong> (<em>str</em>) -- The original text.</p></li>
+<li><p><strong>user_replacements</strong> (<em>dict</em><em>, </em><em>optional</em>) -- A dictionary of user-defined replacements for specific entity labels.
+If provided, these will override the JSON-based mappings.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The text with entities replaced by pseudonyms.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>This subpackage provides various replacement strategies.  It is used internally by the main <cite>zink.replace</cite> function.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to Zink&#39;s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Deepan Wadhwa.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
