@@ -6,12 +6,9 @@ build:
   tools:
     python: "3.11"
   jobs:
-    pre_install:
-      - pip install uv  # Install uv *before* installing project dependencies
     post_install:
-      - uv venv # Create venv using uv
-      - uv pip install .[docs] #Install project dependencies
+      - pip install uv
+      - UV_PROJECT_ENVIRONMENT=$READTHEDOCS_VIRTUALENV_PATH uv sync --all-extras --group docs --link-mode=copy #https://github.com/astral-sh/uv/issues/10074
 sphinx:
   configuration: docs/source/conf.py
-  builder: html
   fail_on_warning: true

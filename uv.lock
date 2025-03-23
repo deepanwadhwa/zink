@@ -1504,12 +1504,20 @@ wheels = [
 
 [[package]]
 name = "zink"
-version = "0.4.0"
+version = "0.4.1"
 source = { editable = "." }
 dependencies = [
     { name = "faker" },
     { name = "gliner" },
     { name = "pyahocorasick" },
+]
+
+[package.optional-dependencies]
+docs = [
+    { name = "ruff" },
+    { name = "sphinx" },
+    { name = "sphinx-autobuild" },
+    { name = "sphinx-rtd-theme" },
 ]
 
 [package.dev-dependencies]
@@ -1527,6 +1535,10 @@ requires-dist = [
     { name = "faker", specifier = ">=37.0.0" },
     { name = "gliner", specifier = "==0.2.3" },
     { name = "pyahocorasick", specifier = ">=2.1.0" },
+    { name = "ruff", marker = "extra == 'docs'", specifier = ">=0.11.2" },
+    { name = "sphinx", marker = "extra == 'docs'", specifier = ">=8.2.3" },
+    { name = "sphinx-autobuild", marker = "extra == 'docs'", specifier = ">=2024.10.3" },
+    { name = "sphinx-rtd-theme", marker = "extra == 'docs'" },
 ]
 
 [package.metadata.requires-dev]
@@ -1536,5 +1548,5 @@ dev = [
     { name = "ruff", specifier = ">=0.11.2" },
     { name = "sphinx", specifier = ">=8.2.3" },
     { name = "sphinx-autobuild", specifier = ">=2024.10.3" },
-    { name = "sphinx-rtd-theme", specifier = ">=3.0.2" },
+    { name = "sphinx-rtd-theme" },
 ]
