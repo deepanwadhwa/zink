@@ -5,6 +5,14 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+import os
+import sys
+
+# Add the following two lines
+SPHINXOPTS = os.environ.get("SPHINXOPTS", "")
+SPHINXOPTS += " -W" # This turns warnings into errors
+
+nitpicky = True  # Treat warnings as errors
 
 project = "Zink"
 copyright = "2025, Deepan Wadhwa"
