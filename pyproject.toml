@@ -17,15 +17,9 @@ dependencies = [
 dev = [
     "ipython>=9.0.0",
     "pytest>=8.3.4",
-    "ruff>=0.11.2",
-    "sphinx>=8.2.3",
-    "sphinx-autobuild>=2024.10.3",
-    "sphinx-rtd-theme>=3.0.2",
 ]
 [project.optional-dependencies]
-dev = [
-    "ipython>=9.0.0",
-    "pytest>=8.3.4",
+docs = [
     "ruff>=0.11.2",
     "sphinx>=8.2.3",
     "sphinx-autobuild>=2024.10.3",
