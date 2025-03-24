@@ -1,4 +1,4 @@
-from zink.passage_processor import redact, replace, replace_with_my_data
+import zink
 
 def punctuation_signature(text):
     """
@@ -15,22 +15,22 @@ sample_text = (
 )
 
 def test_redact_preserves_structure():
-    processed = redact(sample_text, categories=("person", "date", "location"), placeholder="REDACTED", use_cache=True)
+    processed = zink.redact(sample_text, categories=("person", "date", "location"), placeholder="REDACTED", use_cache=True)
     orig_signature = punctuation_signature(sample_text)
-    proc_signature = punctuation_signature(processed)
+    proc_signature = punctuation_signature(processed.anonymized_text)
     assert orig_signature == proc_signature, "Redact: Punctuation signature mismatch"
 
 def test_replace_preserves_structure():
-    processed = replace(sample_text, categories=("person", "date", "location"), user_replacements=None, ensure_consistency=True, use_cache=True)
+    processed = zink.replace(sample_text, categories=("person", "date", "location"), user_replacements=None, ensure_consistency=True, use_cache=True)
     orig_signature = punctuation_signature(sample_text)
-    proc_signature = punctuation_signature(processed)
+    proc_signature = punctuation_signature(processed.anonymized_text)
     assert orig_signature == proc_signature, "Replace: Punctuation signature mismatch"
 
 def test_replace_with_my_data_preserves_structure():
     user_replacements = {"person": "NAME", "date": "DATE", "location": "PLACE"}
-    processed = replace_with_my_data(sample_text, categories=("person", "date", "location"), user_replacements=user_replacements, ensure_consistency=True)
+    processed = zink.replace_with_my_data(sample_text, categories=("person", "date", "location"), user_replacements=user_replacements, ensure_consistency=True)
     orig_signature = punctuation_signature(sample_text)
-    proc_signature = punctuation_signature(processed)
+    proc_signature = punctuation_signature(processed.anonymized_text)
     assert orig_signature == proc_signature, "Replace_with_my_data: Punctuation signature mismatch"
 
 if __name__ == "__main__":
