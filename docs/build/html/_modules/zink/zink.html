@@ -98,15 +98,15 @@
 <span class="sd">    It supports custom user-defined replacements and JSON-based mappings for entity replacement.</span>
 
 <span class="sd">    Parameters:</span>
-<span class="sd">        user_replacements (dict, optional): A dictionary of user-defined replacements for specific entity labels.</span>
+<span class="sd">        user_replacements (dict, ): A dictionary of user-defined replacements for specific entity labels.</span>
 <span class="sd">            If provided, these will override the JSON-based mappings.</span>
-<span class="sd">        use_json_mapping (bool, optional): If True, use JSON-based mappings for entity replacement.</span>
+<span class="sd">        use_json_mapping (bool, ): If True, use JSON-based mappings for entity replacement.</span>
 <span class="sd">            If False, only use user-defined replacements.</span>
-<span class="sd">        extractor (EntityExtractor, optional): An instance of EntityExtractor for extracting entities from text.</span>
+<span class="sd">        extractor (EntityExtractor, ): An instance of EntityExtractor for extracting entities from text.</span>
 <span class="sd">            If None, a default extractor will be used.</span>
-<span class="sd">        merger (EntityMerger, optional): An instance of EntityMerger for merging adjacent entities.</span>
+<span class="sd">        merger (EntityMerger, ): An instance of EntityMerger for merging adjacent entities.</span>
 <span class="sd">            If None, a default merger will be used.</span>
-<span class="sd">        replacer (EntityReplacer, optional): An instance of EntityReplacer for replacing entities with pseudonyms.</span>
+<span class="sd">        replacer (EntityReplacer, ): An instance of EntityReplacer for replacing entities with pseudonyms.</span>
 <span class="sd">            If None, a default replacer will be used.</span>
 <span class="sd">        text (str): The input text to be pseudonymized.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -133,9 +133,9 @@
 <span class="sd">        </span>
 <span class="sd">        Parameters:</span>
 <span class="sd">            text (str): The input text.</span>
-<span class="sd">            categories (tuple of str, optional): Only entities with these labels will be anonymized.</span>
+<span class="sd">            categories (tuple of str, ): Only entities with these labels will be anonymized.</span>
 <span class="sd">                If None, [&quot;person&quot;, &quot;date&quot;, &quot;location&quot;] are anonymized.</span>
-<span class="sd">            placeholder (str, optional): The placeholder string to replace the sensitive entities with. </span>
+<span class="sd">            placeholder (str, ): The placeholder string to replace the sensitive entities with. </span>
 <span class="sd">                Example: &quot;REDACTED&quot; or &quot;$$$&quot;.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Validate input parameters.</span>
@@ -196,9 +196,9 @@
 
 <span class="sd">        Parameters:</span>
 <span class="sd">            text (str): The input text.</span>
-<span class="sd">            categories (tuple of str, optional): Only entities with these labels will be anonymized.</span>
+<span class="sd">            categories (tuple of str, ): Only entities with these labels will be anonymized.</span>
 <span class="sd">                If None, all detected entities are anonymized.</span>
-<span class="sd">            user_replacements (dict, optional): A dictionary of user-defined replacements for specific entity labels.</span>
+<span class="sd">            user_replacements (dict, ): A dictionary of user-defined replacements for specific entity labels.</span>
 <span class="sd">                If provided, these will override the Faker/JSON-based mappings.</span>
 
 <span class="sd">        Returns:</span>
@@ -270,9 +270,9 @@
 
 <span class="sd">        Parameters:</span>
 <span class="sd">            text (str): The input text.</span>
-<span class="sd">            categories (tuple of str, optional): Only entities with these labels will be anonymized.</span>
+<span class="sd">            categories (tuple of str, ): Only entities with these labels will be anonymized.</span>
 <span class="sd">                If None, all detected entities are anonymized.</span>
-<span class="sd">            user_replacements (dict, optional): A dictionary of user-defined replacements for specific entity labels.</span>
+<span class="sd">            user_replacements (dict, ): A dictionary of user-defined replacements for specific entity labels.</span>
 <span class="sd">                If provided, these will override the JSON-based mappings.</span>
 
 <span class="sd">        Returns:</span>

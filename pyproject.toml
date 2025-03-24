@@ -10,6 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
     "faker>=37.0.0",
     "gliner==0.2.3",
+    "nltk>=3.9.1",
     "pyahocorasick>=2.1.0",
 ]
 

@@ -21,7 +21,7 @@ class EntityReplacer:
         Parameters:
             entities (list of dict): A list of dictionaries, each containing 'start', 'end', 'label', and 'text'.
             text (str): The original text.
-            user_replacements (dict, optional): A dictionary of user-defined replacements for specific entity labels.
+            user_replacements (dict, ): A dictionary of user-defined replacements for specific entity labels.
                 If provided, these will override the JSON-based mappings.
         Returns:
             str: The text with entities replaced by pseudonyms.
@@ -60,7 +60,7 @@ class EntityReplacer:
         Parameters:
             entities (list of dict): A list of dictionaries, each containing 'start', 'end', 'label', and 'text'.
             text (str): The original text.
-            user_replacements (dict, optional): A dictionary of user-defined replacements for specific entity labels.
+            user_replacements (dict, ): A dictionary of user-defined replacements for specific entity labels.
                 If provided, these will override the JSON-based mappings.
         
         Returns:

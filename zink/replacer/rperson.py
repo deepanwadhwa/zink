@@ -21,7 +21,7 @@ class PersonReplacementStrategy(ReplacementStrategy):
         Replace the text of a person-related entity with a realistic name.
         Args:
             entity (dict): The entity to be replaced.
-            original_label (str, optional): The original label of the entity. Defaults to None.
+            original_label (str, ): The original label of the entity. Defaults to None.
         Returns:
             str: The replaced text.
         """

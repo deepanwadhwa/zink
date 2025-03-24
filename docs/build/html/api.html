@@ -143,15 +143,15 @@ It supports custom user-defined replacements and JSON-based mappings for entity 
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>user_replacements</strong> (<em>dict</em><em>, </em><em>optional</em>) -- A dictionary of user-defined replacements for specific entity labels.
+<li><p><strong>user_replacements</strong> (<em>dict</em><em>,</em>) -- A dictionary of user-defined replacements for specific entity labels.
 If provided, these will override the JSON-based mappings.</p></li>
-<li><p><strong>use_json_mapping</strong> (<em>bool</em><em>, </em><em>optional</em>) -- If True, use JSON-based mappings for entity replacement.
+<li><p><strong>use_json_mapping</strong> (<em>bool</em><em>,</em>) -- If True, use JSON-based mappings for entity replacement.
 If False, only use user-defined replacements.</p></li>
-<li><p><strong>extractor</strong> (<a class="reference internal" href="#zink.extractor.EntityExtractor" title="zink.extractor.EntityExtractor"><em>EntityExtractor</em></a><em>, </em><em>optional</em>) -- An instance of EntityExtractor for extracting entities from text.
+<li><p><strong>extractor</strong> (<a class="reference internal" href="#zink.extractor.EntityExtractor" title="zink.extractor.EntityExtractor"><em>EntityExtractor</em></a><em>,</em>) -- An instance of EntityExtractor for extracting entities from text.
 If None, a default extractor will be used.</p></li>
-<li><p><strong>merger</strong> (<a class="reference internal" href="#zink.merger.EntityMerger" title="zink.merger.EntityMerger"><em>EntityMerger</em></a><em>, </em><em>optional</em>) -- An instance of EntityMerger for merging adjacent entities.
+<li><p><strong>merger</strong> (<a class="reference internal" href="#zink.merger.EntityMerger" title="zink.merger.EntityMerger"><em>EntityMerger</em></a><em>,</em>) -- An instance of EntityMerger for merging adjacent entities.
 If None, a default merger will be used.</p></li>
-<li><p><strong>replacer</strong> (<a class="reference internal" href="#zink.replacer.EntityReplacer" title="zink.replacer.EntityReplacer"><em>EntityReplacer</em></a><em>, </em><em>optional</em>) -- An instance of EntityReplacer for replacing entities with pseudonyms.
+<li><p><strong>replacer</strong> (<a class="reference internal" href="#zink.replacer.EntityReplacer" title="zink.replacer.EntityReplacer"><em>EntityReplacer</em></a><em>,</em>) -- An instance of EntityReplacer for replacing entities with pseudonyms.
 If None, a default replacer will be used.</p></li>
 <li><p><strong>text</strong> (<em>str</em>) -- The input text to be pseudonymized.</p></li>
 </ul>
@@ -165,9 +165,9 @@ If None, a default replacer will be used.</p></li>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>text</strong> (<em>str</em>) -- The input text.</p></li>
-<li><p><strong>categories</strong> (<em>tuple</em><em> of </em><em>str</em><em>, </em><em>optional</em>) -- Only entities with these labels will be anonymized.
+<li><p><strong>categories</strong> (<em>tuple</em><em> of </em><em>str</em><em>,</em>) -- Only entities with these labels will be anonymized.
 If None, [&quot;person&quot;, &quot;date&quot;, &quot;location&quot;] are anonymized.</p></li>
-<li><p><strong>placeholder</strong> (<em>str</em><em>, </em><em>optional</em>) -- The placeholder string to replace the sensitive entities with.
+<li><p><strong>placeholder</strong> (<em>str</em><em>,</em>) -- The placeholder string to replace the sensitive entities with.
 Example: &quot;REDACTED&quot; or &quot;$$$&quot;.</p></li>
 </ul>
 </dd>
@@ -182,9 +182,9 @@ Example: &quot;REDACTED&quot; or &quot;$$$&quot;.</p></li>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>text</strong> (<em>str</em>) -- The input text.</p></li>
-<li><p><strong>categories</strong> (<em>tuple</em><em> of </em><em>str</em><em>, </em><em>optional</em>) -- Only entities with these labels will be anonymized.
+<li><p><strong>categories</strong> (<em>tuple</em><em> of </em><em>str</em><em>,</em>) -- Only entities with these labels will be anonymized.
 If None, all detected entities are anonymized.</p></li>
-<li><p><strong>user_replacements</strong> (<em>dict</em><em>, </em><em>optional</em>) -- A dictionary of user-defined replacements for specific entity labels.
+<li><p><strong>user_replacements</strong> (<em>dict</em><em>,</em>) -- A dictionary of user-defined replacements for specific entity labels.
 If provided, these will override the Faker/JSON-based mappings.</p></li>
 </ul>
 </dd>
@@ -205,9 +205,9 @@ If provided, these will override the Faker/JSON-based mappings.</p></li>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>text</strong> (<em>str</em>) -- The input text.</p></li>
-<li><p><strong>categories</strong> (<em>tuple</em><em> of </em><em>str</em><em>, </em><em>optional</em>) -- Only entities with these labels will be anonymized.
+<li><p><strong>categories</strong> (<em>tuple</em><em> of </em><em>str</em><em>,</em>) -- Only entities with these labels will be anonymized.
 If None, all detected entities are anonymized.</p></li>
-<li><p><strong>user_replacements</strong> (<em>dict</em><em>, </em><em>optional</em>) -- A dictionary of user-defined replacements for specific entity labels.
+<li><p><strong>user_replacements</strong> (<em>dict</em><em>,</em>) -- A dictionary of user-defined replacements for specific entity labels.
 If provided, these will override the JSON-based mappings.</p></li>
 </ul>
 </dd>
@@ -255,7 +255,7 @@ If provided, these will override the JSON-based mappings.</p></li>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>text</strong> (<em>str</em>) -- The input text.</p></li>
-<li><p><strong>labels</strong> (<em>list</em><em> of </em><em>str</em><em>, </em><em>optional</em>) -- Only entities with these labels will be returned.
+<li><p><strong>labels</strong> (<em>list</em><em> of </em><em>str</em><em>,</em>) -- Only entities with these labels will be returned.
 If None, all detected entities are returned.</p></li>
 </ul>
 </dd>
@@ -369,7 +369,7 @@ merging them into a single entity when appropriate.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>entities</strong> (<em>list</em><em> of </em><em>dict</em>) -- A list of dictionaries, each containing 'start', 'end', 'label', and 'text'.</p></li>
 <li><p><strong>text</strong> (<em>str</em>) -- The original text.</p></li>
-<li><p><strong>user_replacements</strong> (<em>dict</em><em>, </em><em>optional</em>) -- A dictionary of user-defined replacements for specific entity labels.
+<li><p><strong>user_replacements</strong> (<em>dict</em><em>,</em>) -- A dictionary of user-defined replacements for specific entity labels.
 If provided, these will override the JSON-based mappings.</p></li>
 </ul>
 </dd>
@@ -391,7 +391,7 @@ If provided, these will override the JSON-based mappings.</p></li>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>entities</strong> (<em>list</em><em> of </em><em>dict</em>) -- A list of dictionaries, each containing 'start', 'end', 'label', and 'text'.</p></li>
 <li><p><strong>text</strong> (<em>str</em>) -- The original text.</p></li>
-<li><p><strong>user_replacements</strong> (<em>dict</em><em>, </em><em>optional</em>) -- A dictionary of user-defined replacements for specific entity labels.
+<li><p><strong>user_replacements</strong> (<em>dict</em><em>,</em>) -- A dictionary of user-defined replacements for specific entity labels.
 If provided, these will override the JSON-based mappings.</p></li>
 </ul>
 </dd>
