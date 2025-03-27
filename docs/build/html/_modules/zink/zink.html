@@ -69,347 +69,160 @@
            <div itemprop="articleBody">
              
   <h1>Source code for zink.zink</h1><div class="highlight"><pre>
-<span></span><span class="c1"># from .extractor import EntityExtractor</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.extractor</span><span class="w"> </span><span class="kn">import</span> <span class="n">_DEFAULT_EXTRACTOR</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.merger</span><span class="w"> </span><span class="kn">import</span> <span class="n">EntityMerger</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.replacer</span><span class="w"> </span><span class="kn">import</span> <span class="n">EntityReplacer</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.result</span><span class="w"> </span><span class="kn">import</span> <span class="n">PseudonymizationResult</span>  <span class="c1"># Assume you defined this dataclass</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">lru_cache</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span></span><span class="c1"># zink.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pseudonymizer</span>
 
-<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+<span class="c1"># Create a global instance to preserve cache across calls.</span>
+<span class="n">_global_instance</span> <span class="o">=</span> <span class="n">Pseudonymizer</span><span class="p">()</span>
 
-<span class="c1"># Instantiate default components at module load time.</span>
-
-<span class="c1"># _DEFAULT_EXTRACTOR = EntityExtractor()</span>
-<span class="n">_DEFAULT_MERGER</span> <span class="o">=</span> <span class="n">EntityMerger</span><span class="p">()</span>
-
-
-<div class="viewcode-block" id="Pseudonymizer">
-<a class="viewcode-back" href="../../api.html#zink.zink.Pseudonymizer">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">Pseudonymizer</span><span class="p">:</span>
+<div class="viewcode-block" id="redact">
+<a class="viewcode-back" href="../../api.html#zink.zink.redact">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">redact</span><span class="p">(</span>
+    <span class="n">text</span><span class="p">,</span>
+    <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">placeholder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">use_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">use_json_mapping</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">extractor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">merger</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">replacer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="c1"># Below are concurrency-related or advanced parameters:</span>
+    <span class="n">auto_parallel</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">chunk_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">max_workers</span><span class="o">=</span><span class="mi">4</span>
+<span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Pseudonymizes text by replacing sensitive entities.</span>
-
-<span class="sd">    This class provides three methods to deal with sensitive entities:</span>
-<span class="sd">    Redact - replaces sensitive entities with a placeholder. </span>
-<span class="sd">    Replace - replaces sensitive entities with pseudonyms.</span>
-<span class="sd">    Replace with your own data - replaces sensitive entities with user-defined pseudonyms.</span>
-<span class="sd">    It supports custom user-defined replacements and JSON-based mappings for entity replacement.</span>
-
-<span class="sd">    Parameters:</span>
-<span class="sd">        user_replacements (dict, ): A dictionary of user-defined replacements for specific entity labels.</span>
-<span class="sd">            If provided, these will override the JSON-based mappings.</span>
-<span class="sd">        use_json_mapping (bool, ): If True, use JSON-based mappings for entity replacement.</span>
-<span class="sd">            If False, only use user-defined replacements.</span>
-<span class="sd">        extractor (EntityExtractor, ): An instance of EntityExtractor for extracting entities from text.</span>
-<span class="sd">            If None, a default extractor will be used.</span>
-<span class="sd">        merger (EntityMerger, ): An instance of EntityMerger for merging adjacent entities.</span>
-<span class="sd">            If None, a default merger will be used.</span>
-<span class="sd">        replacer (EntityReplacer, ): An instance of EntityReplacer for replacing entities with pseudonyms.</span>
-<span class="sd">            If None, a default replacer will be used.</span>
-<span class="sd">        text (str): The input text to be pseudonymized.</span>
+<span class="sd">    Module-level convenience function that uses a global instance for caching.</span>
+<span class="sd">    If &#39;auto_parallel&#39; is True and len(text) &gt; chunk_size, concurrency-based pipeline is used.</span>
+<span class="sd">    Otherwise single-pass logic is used.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">use_json_mapping</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">extractor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">merger</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">replacer</span><span class="o">=</span><span class="kc">None</span>
-    <span class="p">):</span>
-        <span class="c1"># &#39;labels&#39; can be used by the extractor if needed.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">extractor</span> <span class="o">=</span> <span class="n">extractor</span> <span class="k">if</span> <span class="n">extractor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_DEFAULT_EXTRACTOR</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">merger</span> <span class="o">=</span> <span class="n">merger</span> <span class="k">if</span> <span class="n">merger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_DEFAULT_MERGER</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">replacer</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">replacer</span>
-            <span class="k">if</span> <span class="n">replacer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="n">EntityReplacer</span><span class="p">(</span><span class="n">use_json_mapping</span><span class="o">=</span><span class="n">use_json_mapping</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">extractor</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">merger</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">replacer</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">use_json_mapping</span><span class="p">:</span>
+        <span class="c1"># Use global instance + built-in concurrency if desired</span>
+        <span class="k">return</span> <span class="n">_global_instance</span><span class="o">.</span><span class="n">redact</span><span class="p">(</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">categories</span><span class="o">=</span><span class="n">categories</span><span class="p">,</span>
+            <span class="n">placeholder</span><span class="o">=</span><span class="n">placeholder</span><span class="p">,</span>
+            <span class="n">use_cache</span><span class="o">=</span><span class="n">use_cache</span><span class="p">,</span>
+            <span class="n">auto_parallel</span><span class="o">=</span><span class="n">auto_parallel</span><span class="p">,</span>
+            <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-
-<div class="viewcode-block" id="Pseudonymizer.redact">
-<a class="viewcode-back" href="../../api.html#zink.zink.Pseudonymizer.redact">[docs]</a>
-    <span class="nd">@lru_cache</span><span class="p">()</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">redact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">placeholder</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Find and Redact categories in given text.</span>
-<span class="sd">        </span>
-<span class="sd">        Parameters:</span>
-<span class="sd">            text (str): The input text.</span>
-<span class="sd">            categories (tuple of str, ): Only entities with these labels will be anonymized.</span>
-<span class="sd">                If None, [&quot;person&quot;, &quot;date&quot;, &quot;location&quot;] are anonymized.</span>
-<span class="sd">            placeholder (str, ): The placeholder string to replace the sensitive entities with. </span>
-<span class="sd">                Example: &quot;REDACTED&quot; or &quot;$$$&quot;.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Validate input parameters.</span>
-        <span class="k">if</span> <span class="n">text</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">text</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Text must be provided for this method. For example, use `zink.redact(text=&#39;your text here&#39;)`.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="n">placeholder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">placeholder</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Placeholder must be a string.&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Text must be a string. For example, use `zink.redact(text=&#39;your text here&#39;)`.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Text cannot be empty.&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">categories</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">categories</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Categories must be a tuple of strings. For example, use `zink.redact(text=&#39;your text here&#39;, categories=(&#39;person&#39;, &#39;date&#39;))`.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="n">categories</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;All categories must be strings.&quot;</span><span class="p">)</span>
-        <span class="c1"># Step 1: Extract entities and merge adjacent ones.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span>
-        <span class="n">entities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extractor</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">categories</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">merger</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">entities</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
-
-        <span class="c1"># If categories are provided, filter to only include those entities.</span>
-        <span class="k">if</span> <span class="n">categories</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">categories</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span> <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">categories</span>
-            <span class="p">]</span>
-        <span class="n">pseudonymized_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span>
-        <span class="k">for</span> <span class="n">ent</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">placeholder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">placeholder_</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ent</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">_REDACTED&quot;</span>
-            <span class="c1"># print(f&quot;Replacing {ent[&#39;text&#39;]} with {placeholder_}&quot;)</span>
-            <span class="n">pseudonymized_text</span> <span class="o">=</span> <span class="n">pseudonymized_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">ent</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span> <span class="n">placeholder_</span><span class="p">)</span>
-
-        <span class="c1"># Build and return a structured result.</span>
-        <span class="k">return</span> <span class="n">PseudonymizationResult</span><span class="p">(</span>
-            <span class="n">original_text</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
-            <span class="n">anonymized_text</span><span class="o">=</span><span class="n">pseudonymized_text</span><span class="p">,</span>
-            <span class="n">replacements</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span><span class="p">,</span>  <span class="c1"># Additional details if needed.</span>
-            <span class="n">features</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;num_replacements&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span><span class="p">)},</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Create a fresh instance</span>
+        <span class="n">pseudonymizer</span> <span class="o">=</span> <span class="n">Pseudonymizer</span><span class="p">(</span>
+            <span class="n">use_json_mapping</span><span class="o">=</span><span class="n">use_json_mapping</span><span class="p">,</span>
+            <span class="n">extractor</span><span class="o">=</span><span class="n">extractor</span><span class="p">,</span>
+            <span class="n">merger</span><span class="o">=</span><span class="n">merger</span><span class="p">,</span>
+            <span class="n">replacer</span><span class="o">=</span><span class="n">replacer</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">pseudonymizer</span><span class="o">.</span><span class="n">redact</span><span class="p">(</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">categories</span><span class="o">=</span><span class="n">categories</span><span class="p">,</span>
+            <span class="n">placeholder</span><span class="o">=</span><span class="n">placeholder</span><span class="p">,</span>
+            <span class="n">use_cache</span><span class="o">=</span><span class="n">use_cache</span><span class="p">,</span>
+            <span class="n">auto_parallel</span><span class="o">=</span><span class="n">auto_parallel</span><span class="p">,</span>
+            <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span>
         <span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="Pseudonymizer.replace">
-<a class="viewcode-back" href="../../api.html#zink.zink.Pseudonymizer.replace">[docs]</a>
-    <span class="nd">@lru_cache</span><span class="p">()</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">replace</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">user_replacements</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ensure_consistency</span><span class="o">=</span><span class="kc">True</span>
-    <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Find and Replace categories in given text.</span>
-
-<span class="sd">        Parameters:</span>
-<span class="sd">            text (str): The input text.</span>
-<span class="sd">            categories (tuple of str, ): Only entities with these labels will be anonymized.</span>
-<span class="sd">                If None, all detected entities are anonymized.</span>
-<span class="sd">            user_replacements (dict, ): A dictionary of user-defined replacements for specific entity labels.</span>
-<span class="sd">                If provided, these will override the Faker/JSON-based mappings.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            PseudonymizationResult: A structured result with original text, pseudonymized text, etc.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Validate input parameters.</span>
-        <span class="k">if</span> <span class="n">text</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">text</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Text must be provided for this method. For example, use `replace(text=&#39;your text here&#39;)`.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="n">user_replacements</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;`user_replacements` are not supported in this method. &quot;</span>
-                <span class="s2">&quot;Please use `replace_with_my_data` instead.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Text must be a string.&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Text cannot be empty.&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">categories</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">categories</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Categories must be a tuple of strings. For example, use `replace(text=&#39;your text here&#39;, categories=(&#39;person&#39;, &#39;date&#39;))`.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="n">categories</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;All categories must be strings.&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">ensure_consistency</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ensure_consistency</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Ensure consistency must be a boolean.&quot;</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span>
-        <span class="c1"># Step 1: Extract entities and merge adjacent ones.</span>
-        <span class="n">entities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extractor</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">categories</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">merger</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">entities</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
-
-        <span class="c1"># If categories are provided, filter to only include those entities.</span>
-        <span class="k">if</span> <span class="n">categories</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">categories</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span> <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">categories</span>
-            <span class="p">]</span>
-
-        <span class="c1"># Step 2: Replace entities.</span>
-        <span class="k">if</span> <span class="n">ensure_consistency</span><span class="p">:</span>
-            <span class="c1"># Ensure consistency in replacements.</span>
-            <span class="n">pseudonymized_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">replacer</span><span class="o">.</span><span class="n">replace_entities_ensure_consistency</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">user_replacements</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Use the default replacement strategy.</span>
-            <span class="n">pseudonymized_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">replacer</span><span class="o">.</span><span class="n">replace_entities</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">user_replacements</span>
-            <span class="p">)</span>
-
-        <span class="c1"># Build and return a structured result.</span>
-        <span class="k">return</span> <span class="n">PseudonymizationResult</span><span class="p">(</span>
-            <span class="n">original_text</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
-            <span class="n">anonymized_text</span><span class="o">=</span><span class="n">pseudonymized_text</span><span class="p">,</span>
-            <span class="n">replacements</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span><span class="p">,</span>  <span class="c1"># Additional details if needed.</span>
-            <span class="n">features</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;num_replacements&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span><span class="p">)},</span>
-        <span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="Pseudonymizer.replace_with_my_data">
-<a class="viewcode-back" href="../../api.html#zink.zink.Pseudonymizer.replace_with_my_data">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">replace_with_my_data</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">user_replacements</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ensure_consistency</span><span class="o">=</span><span class="kc">True</span>
-    <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Find and Replace categories in given text.</span>
-
-<span class="sd">        Parameters:</span>
-<span class="sd">            text (str): The input text.</span>
-<span class="sd">            categories (tuple of str, ): Only entities with these labels will be anonymized.</span>
-<span class="sd">                If None, all detected entities are anonymized.</span>
-<span class="sd">            user_replacements (dict, ): A dictionary of user-defined replacements for specific entity labels.</span>
-<span class="sd">                If provided, these will override the JSON-based mappings.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            PseudonymizationResult: A structured result with original text, pseudonymized text, etc.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">user_replacements</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;User replacements must be provided for this method. For example, use `replace_with_my_data(text=&#39;your text here&#39;, user_replacements={&#39;person&#39;: &#39;John&#39;})`.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">user_replacements</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;User replacements must be a dictionary. For example, use `replace_with_my_data(text=&#39;your text here&#39;, user_replacements={&#39;person&#39;: &#39;John&#39;})`.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">user_replacements</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;User replacements dictionary cannot be empty. For example, use `replace_with_my_data(text=&#39;your text here&#39;, user_replacements={&#39;person&#39;: &#39;John&#39;})`.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="n">text</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Text must be provided for this method. For example, use `replace_with_my_data(text=&#39;your text here&#39;, user_replacements={&#39;person&#39;: &#39;John&#39;})`.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Text must be a string. For example, use `replace_with_my_data(text=&#39;your text here&#39;, user_replacements={&#39;person&#39;: &#39;John&#39;})`.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Text cannot be empty. For example, use `replace_with_my_data(text=&#39;your text here&#39;, user_replacements={&#39;person&#39;: &#39;John&#39;})`.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="n">categories</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">categories</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Categories must be a tuple of strings. For example, use `replace_with_my_data(text=&#39;your text here&#39;, user_replacements={&#39;person&#39;: &#39;John&#39;}, categories=(&#39;person&#39;, &#39;date&#39;))`.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="n">categories</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;All categories must be strings. For example, use `replace_with_my_data(text=&#39;your text here&#39;, user_replacements={&#39;person&#39;: &#39;John&#39;}, categories=(&#39;person&#39;, &#39;date&#39;))`.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="n">ensure_consistency</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ensure_consistency</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Ensure consistency must be a boolean. For example, use `replace_with_my_data(text=&#39;your text here&#39;, user_replacements={&#39;person&#39;: &#39;John&#39;},&quot;</span>
-            <span class="p">)</span>
-
-        <span class="n">allowed_types</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">user_replacements</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span> <span class="o">:=</span> <span class="n">user_replacements</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">allowed_types</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Invalid type for key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39;: expected str, list, or tuple, &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> instead.&quot;</span>
-                <span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span>
-        <span class="c1"># Step 1: Extract entities and merge adjacent ones.</span>
-        <span class="n">entities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extractor</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">categories</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">merger</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">entities</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
-
-        <span class="c1"># If categories are provided, filter to only include those entities.</span>
-        <span class="k">if</span> <span class="n">categories</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">categories</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span> <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">categories</span>
-            <span class="p">]</span>
-
-        <span class="c1"># Step 2: Replace entities.</span>
-        <span class="k">if</span> <span class="n">ensure_consistency</span><span class="p">:</span>
-            <span class="c1"># Ensure consistency in replacements.</span>
-            <span class="n">pseudonymized_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">replacer</span><span class="o">.</span><span class="n">replace_entities_ensure_consistency</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">user_replacements</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Use the default replacement strategy.</span>
-            <span class="n">pseudonymized_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">replacer</span><span class="o">.</span><span class="n">replace_entities</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">user_replacements</span>
-            <span class="p">)</span>
-
-        <span class="c1"># Build and return a structured result.</span>
-        <span class="k">return</span> <span class="n">PseudonymizationResult</span><span class="p">(</span>
-            <span class="n">original_text</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
-            <span class="n">anonymized_text</span><span class="o">=</span><span class="n">pseudonymized_text</span><span class="p">,</span>
-            <span class="n">replacements</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span><span class="p">,</span>  <span class="c1"># Additional details if needed.</span>
-            <span class="n">features</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;num_replacements&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">merged_entities</span><span class="p">)},</span>
-        <span class="p">)</span></div>
-</div>
-
-
-
-<span class="c1"># For usage enhancement:</span>
-
-<span class="n">_default_instance</span> <span class="o">=</span> <span class="n">Pseudonymizer</span><span class="p">()</span>
 
 
 <div class="viewcode-block" id="replace">
 <a class="viewcode-back" href="../../api.html#zink.zink.replace">[docs]</a>
-<span class="nd">@lru_cache</span><span class="p">()</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">replace</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">user_replacements</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ensure_consistency</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">replace</span><span class="p">(</span>
+    <span class="n">text</span><span class="p">,</span>
+    <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">user_replacements</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">ensure_consistency</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">use_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">use_json_mapping</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">extractor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">merger</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">replacer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">auto_parallel</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">chunk_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">max_workers</span><span class="o">=</span><span class="mi">4</span>
+<span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Same method as `Pseudonymizer.replace`, but allows for direct usage without instantiating the class.</span>
+<span class="sd">    Module-level convenience function that uses a global instance for caching.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">_default_instance</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
-        <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
-        <span class="n">categories</span><span class="o">=</span><span class="n">categories</span><span class="p">,</span>
-        <span class="n">user_replacements</span><span class="o">=</span><span class="n">user_replacements</span><span class="p">,</span>
-        <span class="n">ensure_consistency</span><span class="o">=</span><span class="n">ensure_consistency</span><span class="p">,</span>
-    <span class="p">)</span></div>
-
-
-
-<div class="viewcode-block" id="redact">
-<a class="viewcode-back" href="../../api.html#zink.zink.redact">[docs]</a>
-<span class="nd">@lru_cache</span><span class="p">()</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">redact</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">placeholder</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Same method as `Pseudonymizer.redact`, but allows for direct usage without instantiating the class.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">_default_instance</span><span class="o">.</span><span class="n">redact</span><span class="p">(</span>
-        <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">categories</span><span class="o">=</span><span class="n">categories</span><span class="p">,</span> <span class="n">placeholder</span><span class="o">=</span><span class="n">placeholder</span>
-    <span class="p">)</span></div>
-
+    <span class="k">if</span> <span class="n">extractor</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">merger</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">replacer</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">use_json_mapping</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_global_instance</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">categories</span><span class="o">=</span><span class="n">categories</span><span class="p">,</span>
+            <span class="n">user_replacements</span><span class="o">=</span><span class="n">user_replacements</span><span class="p">,</span>
+            <span class="n">ensure_consistency</span><span class="o">=</span><span class="n">ensure_consistency</span><span class="p">,</span>
+            <span class="n">use_cache</span><span class="o">=</span><span class="n">use_cache</span><span class="p">,</span>
+            <span class="n">auto_parallel</span><span class="o">=</span><span class="n">auto_parallel</span><span class="p">,</span>
+            <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pseudonymizer</span> <span class="o">=</span> <span class="n">Pseudonymizer</span><span class="p">(</span>
+            <span class="n">use_json_mapping</span><span class="o">=</span><span class="n">use_json_mapping</span><span class="p">,</span>
+            <span class="n">extractor</span><span class="o">=</span><span class="n">extractor</span><span class="p">,</span>
+            <span class="n">merger</span><span class="o">=</span><span class="n">merger</span><span class="p">,</span>
+            <span class="n">replacer</span><span class="o">=</span><span class="n">replacer</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">pseudonymizer</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">categories</span><span class="o">=</span><span class="n">categories</span><span class="p">,</span>
+            <span class="n">user_replacements</span><span class="o">=</span><span class="n">user_replacements</span><span class="p">,</span>
+            <span class="n">ensure_consistency</span><span class="o">=</span><span class="n">ensure_consistency</span><span class="p">,</span>
+            <span class="n">use_cache</span><span class="o">=</span><span class="n">use_cache</span><span class="p">,</span>
+            <span class="n">auto_parallel</span><span class="o">=</span><span class="n">auto_parallel</span><span class="p">,</span>
+            <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span>
+        <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="replace_with_my_data">
 <a class="viewcode-back" href="../../api.html#zink.zink.replace_with_my_data">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">replace_with_my_data</span><span class="p">(</span>
-    <span class="n">text</span><span class="p">,</span> <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">user_replacements</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ensure_consistency</span><span class="o">=</span><span class="kc">True</span>
+    <span class="n">text</span><span class="p">,</span>
+    <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">user_replacements</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">ensure_consistency</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">use_json_mapping</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">extractor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">merger</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">replacer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="c1"># Usually we don&#39;t cache user-defined replacements, but if you want concurrency, add it:</span>
+    <span class="n">auto_parallel</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">chunk_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">max_workers</span><span class="o">=</span><span class="mi">4</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Same method as `Pseudonymizer.replace_with_my_data`, but allows for direct usage without instantiating the class.</span>
+<span class="sd">    Module-level convenience function. </span>
+<span class="sd">    Typically &#39;replace_with_my_data&#39; does NOT rely on caching,</span>
+<span class="sd">    but we might still want concurrency for large texts if &#39;auto_parallel&#39; is True.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">_default_instance</span><span class="o">.</span><span class="n">replace_with_my_data</span><span class="p">(</span>
-        <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
-        <span class="n">categories</span><span class="o">=</span><span class="n">categories</span><span class="p">,</span>
-        <span class="n">user_replacements</span><span class="o">=</span><span class="n">user_replacements</span><span class="p">,</span>
-        <span class="n">ensure_consistency</span><span class="o">=</span><span class="n">ensure_consistency</span><span class="p">,</span>
-    <span class="p">)</span></div>
+    <span class="k">if</span> <span class="n">extractor</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">merger</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">replacer</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">use_json_mapping</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_global_instance</span><span class="o">.</span><span class="n">replace_with_my_data</span><span class="p">(</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">categories</span><span class="o">=</span><span class="n">categories</span><span class="p">,</span>
+            <span class="n">user_replacements</span><span class="o">=</span><span class="n">user_replacements</span><span class="p">,</span>
+            <span class="n">ensure_consistency</span><span class="o">=</span><span class="n">ensure_consistency</span><span class="p">,</span>
+            <span class="n">auto_parallel</span><span class="o">=</span><span class="n">auto_parallel</span><span class="p">,</span>
+            <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pseudonymizer</span> <span class="o">=</span> <span class="n">Pseudonymizer</span><span class="p">(</span>
+            <span class="n">use_json_mapping</span><span class="o">=</span><span class="n">use_json_mapping</span><span class="p">,</span>
+            <span class="n">extractor</span><span class="o">=</span><span class="n">extractor</span><span class="p">,</span>
+            <span class="n">merger</span><span class="o">=</span><span class="n">merger</span><span class="p">,</span>
+            <span class="n">replacer</span><span class="o">=</span><span class="n">replacer</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">pseudonymizer</span><span class="o">.</span><span class="n">replace_with_my_data</span><span class="p">(</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">categories</span><span class="o">=</span><span class="n">categories</span><span class="p">,</span>
+            <span class="n">user_replacements</span><span class="o">=</span><span class="n">user_replacements</span><span class="p">,</span>
+            <span class="n">ensure_consistency</span><span class="o">=</span><span class="n">ensure_consistency</span><span class="p">,</span>
+            <span class="n">auto_parallel</span><span class="o">=</span><span class="n">auto_parallel</span><span class="p">,</span>
+            <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span>
+        <span class="p">)</span></div>
 
-
-
-<span class="c1"># This allows users to call `replace` and `redact` directly without needing to instantiate the class.</span>
 </pre></div>
 
            </div>
