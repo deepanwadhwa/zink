@@ -51,12 +51,14 @@ class Pseudonymizer:
     # 3) Public Methods
     #
     def redact(self, text, categories=None, placeholder=None,
-               use_cache=True, auto_parallel=True, chunk_size=250, max_workers=4):
+               use_cache=True, auto_parallel=False, chunk_size=1000, max_workers=4):
         """
         If auto_parallel=True & text is large, do parallel extraction.
         Else do single-pass extraction.
         If use_cache=True, we call the cached single-pass method.
         """
+        if len(text) > chunk_size:
+            auto_parallel = True
         if auto_parallel and len(text) > chunk_size:
             merged = self._parallel_extraction(text, chunk_size, max_workers, categories)
             anonymized = self._do_redact(text, merged, placeholder)
@@ -87,12 +89,14 @@ class Pseudonymizer:
 
     def replace(self, text, categories=None, user_replacements=None,
                 ensure_consistency=True, use_cache=True,
-                auto_parallel=True, chunk_size=250, max_workers=4):
+                auto_parallel=False, chunk_size=1000, max_workers=4):
         """
         Replaces entities with pseudonyms (Faker/JSON).
         If auto_parallel=True & text is large, do parallel extraction.
         Else do single-pass (with optional caching).
         """
+        if len(text) > chunk_size:
+            auto_parallel = True
         if auto_parallel and len(text) > chunk_size:
             merged = self._parallel_extraction(text, chunk_size, max_workers, categories)
         else:
@@ -122,10 +126,12 @@ class Pseudonymizer:
 
     def replace_with_my_data(self, text, categories=None, user_replacements=None,
                              ensure_consistency=True,
-                             auto_parallel=True, chunk_size=250, max_workers=4):
+                             auto_parallel=False, chunk_size=1000, max_workers=4):
         """
         Replaces entities with user-defined data. Typically skip caching, but if you want, you can add it.
         """
+        if len(text) > chunk_size:
+            auto_parallel = True
         if user_replacements is None or not user_replacements:
             raise ValueError("User replacements must be a non-empty dict.")
 

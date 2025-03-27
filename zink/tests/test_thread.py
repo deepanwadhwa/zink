@@ -12,7 +12,7 @@ def test_redact():
     with open("zink/tests/data/sample.txt", "r", encoding="utf-8") as file:
         original_text = file.read()
     # Process the text using redact.
-    processed = zink.redact(original_text, categories=("person", "date", "location"), placeholder="REDACTED", use_cache=False, chunk_size=200)
+    processed = zink.redact(original_text, categories=("person", "date", "location"), placeholder="REDACTED", use_cache=False, chunk_size=500)
     # Compute punctuation signatures.
     orig_sig = punctuation_signature(original_text)
     proc_sig = punctuation_signature(processed.anonymized_text)
@@ -23,7 +23,7 @@ def test_replace():
     with open("zink/tests/data/sample.txt", "r", encoding="utf-8") as file:
         original_text = file.read()
     # Process the text using replace.
-    processed = zink.replace(original_text, categories=("person", "date", "location"), user_replacements=None, ensure_consistency=True, use_cache=False,chunk_size=200)
+    processed = zink.replace(original_text, categories=("person", "date", "location"), ensure_consistency=True, use_cache=False,chunk_size=200)
     # Compute punctuation signatures.
     orig_sig = punctuation_signature(original_text)
     proc_sig = punctuation_signature(processed.anonymized_text)

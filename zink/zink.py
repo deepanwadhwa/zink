@@ -14,8 +14,8 @@ def redact(
     merger=None,
     replacer=None,
     # Below are concurrency-related or advanced parameters:
-    auto_parallel=True,
-    chunk_size=250,
+    auto_parallel=False,
+    chunk_size=1000,
     max_workers=4
 ):
     """
@@ -62,8 +62,8 @@ def replace(
     extractor=None,
     merger=None,
     replacer=None,
-    auto_parallel=True,
-    chunk_size=250,
+    auto_parallel=False,
+    chunk_size=1000,
     max_workers=4
 ):
     """
@@ -108,8 +108,8 @@ def replace_with_my_data(
     merger=None,
     replacer=None,
     # Usually we don't cache user-defined replacements, but if you want concurrency, add it:
-    auto_parallel=True,
-    chunk_size=250,
+    auto_parallel=False,
+    chunk_size=1000,
     max_workers=4
 ):
     """

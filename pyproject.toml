@@ -1,6 +1,6 @@
 [project]
 name = "zink"
-version = "0.4.1"
+version = "0.5.1"
 description = "Zink lets you safeguard privacy by detecting sensitive information and replacing it with secure, customizable placeholders."
 authors = [
     { name = "Deepan Wadhwa"}
@@ -9,7 +9,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "faker>=37.0.0",
-    "gliner==0.2.3",
+    "gliner>=0.2.17",
     "nltk>=3.9.1",
     "pyahocorasick>=2.1.0",
 ]
