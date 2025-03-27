@@ -87,13 +87,16 @@ result = zink.replace_with_my_data(text, labels, user_replacements=custom_replac
 print(result.anonymized_text)
 # Possible Output: "Alice works at OpenAI and drives a Honda."
 ```
-## Underlying components:
+## Under the hood:
 
-### Thank you, [NuNer](https://huggingface.co/numind/NuNER_Zero):
+### [GLiNER](https://github.com/urchade/GLiNER):
+GLiNER is a Named Entity Recognition (NER) model capable of identifying any entity type using a bidirectional transformer encoder (BERT-like). It provides a practical alternative to traditional NER models, which are limited to predefined entities, and Large Language Models (LLMs) that, despite their flexibility, are costly and large for resource-constrained scenarios.
+
+### [NuNer](https://huggingface.co/numind/NuNER_Zero):
 NuNerZero is a compact, zero-shot Named Entity Recognition model that leverages the robust GLiNER architecture for efficient token classification. It requires lower-cased labels and processes inputs as a concatenation of entity types and text, enabling it to detect arbitrarily long entities. Trained on the NuNER v2.0 dataset, NuNerZero achieves impressive performance, outperforming larger models like GLiNER-large-v2.1 by over 3% in token-level F1-score. This model is ideal for both research and practical applications where a streamlined, high-accuracy NER solution is essential.
 
-### Faker Integration
-Zink now leverages the [Faker](https://faker.readthedocs.io/) library to generate realistic, synthetic replacements for sensitive information. This feature is relatively new and continues to evolve, enhancing our data masking capabilities while preserving contextual plausibility.
+### [Faker](https://faker.readthedocs.io/)
+Zink now leverages the Faker library to generate realistic, synthetic replacements for sensitive information. This feature is relatively new and continues to evolve, enhancing our data masking capabilities while preserving contextual plausibility.
 
 #### How Faker Is Utilized
 Dynamic Data Generation:

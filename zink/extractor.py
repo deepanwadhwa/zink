@@ -20,7 +20,7 @@ class EntityExtractor:
 
         Parameters:
             text (str): The input text.
-            labels (list of str, optional): Only entities with these labels will be returned.
+            labels (list of str, ): Only entities with these labels will be returned.
                 If None, all detected entities are returned.
                 
         Returns:
