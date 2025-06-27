@@ -27,15 +27,17 @@ pip install zink
 ```
 ## Usage
 
+### For details, check out the [Documentation](https://zink.readthedocs.io/en/latest/)
+
 ### Redacting Entities
 The redact function replaces identified entities with [LABEL]_REDACTED.
 
 ```bash
-import zink as pss
+import zink as zn
 
 text = "John works as a doctor and plays football after work and drives a toyota."
 labels = ("person", "profession", "sport", "car")
-result = pss.redact(text, labels)
+result = zn.redact(text, labels)
 print(result.anonymized_text)
 Example output:
 
@@ -46,11 +48,11 @@ person_REDACTED works as a profession_REDACTED and plays sport_REDACTED after wo
 The replace function replaces identified entities with a random entity of the same type.
 
 ```bash
-import zink as pss
+import zink as zn
 
 text = "John Doe dialled his mother at 992-234-3456 and then went out for a walk."
 labels = ("person", "phone number", "relationship")
-result = pss.replace(text, labels)
+result = zn.replace(text, labels)
 print(result.anonymized_text)
 
 #Possible output: Warren Buffet dialled his Uncle at 2347789287 and then went out for a walk.
@@ -59,11 +61,11 @@ print(result.anonymized_text)
 Another example:
 
 ```bash
-import zink as pss
+import zink as zn
 
 text = "Patient, 33 years old, was admitted with a chest pain"
 labels = ("age", "medical condition")
-result = pss.replace(text, labels)
+result = zn.replace(text, labels)
 print(result.anonymized_text)
 Example output:
 
