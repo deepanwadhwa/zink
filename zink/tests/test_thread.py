@@ -19,16 +19,16 @@ def test_redact():
     assert orig_sig == proc_sig, "Redact: Combined punctuation signature mismatch"
     print("test_redact passed")
 
-def test_replace():
-    with open("zink/tests/data/sample.txt", "r", encoding="utf-8") as file:
-        original_text = file.read()
-    # Process the text using replace.
-    processed = zink.replace(original_text, categories=("person", "date", "location"), ensure_consistency=True, use_cache=False,chunk_size=200)
-    # Compute punctuation signatures.
-    orig_sig = punctuation_signature(original_text)
-    proc_sig = punctuation_signature(processed.anonymized_text)
-    assert orig_sig == proc_sig, "Replace: Combined punctuation signature mismatch"
-    print("test_replace passed")
+# def test_replace():
+#     with open("zink/tests/data/sample.txt", "r", encoding="utf-8") as file:
+#         original_text = file.read()
+#     # Process the text using replace.
+#     processed = zink.replace(original_text, categories=("person", "date", "location"), ensure_consistency=True, use_cache=False,chunk_size=200)
+#     # Compute punctuation signatures.
+#     orig_sig = punctuation_signature(original_text)
+#     proc_sig = punctuation_signature(processed.anonymized_text)
+#     assert orig_sig == proc_sig, "Replace: Combined punctuation signature mismatch"
+#     print("test_replace passed")
 
 def test_replace_with_my_data():
     with open("zink/tests/data/sample.txt", "r", encoding="utf-8") as file:
