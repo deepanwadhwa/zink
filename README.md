@@ -1,3 +1,7 @@
+[![PyPI version](https://badge.fury.io/py/zink.svg)](https://badge.fury.io/py/zink)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Tests](https://github.com/deepanwadhwa/zink/actions/workflows/main.yml/badge.svg)](https://github.com/deepanwadhwa/zink/actions)
+
 <div align="center">
   <h1>ZINK (Zero-shot Ink)</h1>
 </div>
