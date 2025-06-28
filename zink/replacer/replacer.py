@@ -84,6 +84,9 @@ class EntityReplacer:
                 replacement, source = FakerOrJsonReplacementStrategy(
                     label, self.use_json_mapping
                 ).replace(entity)
+            if replacement is None or replacement == entity["text"]:
+                replacement = label+"_REDACTED"
+                source = "redaction"
             entity["source"] = source  # Record the source in the entity.
             new_text += replacement
             last_index = entity["end"]
