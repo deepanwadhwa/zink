@@ -119,7 +119,7 @@ def test09():
     # Test combined labels: person and location.
     text = "Alice, the engineer, from United States of America, called her friend."
     labels = ("person", "location")
-    q = zn.redact(text, labels)
+    q = zn.replace(text, labels)
     # Check that "Alice" is replaced and that the country (or its synonyms) is replaced
     assert (
         "alice" not in q.anonymized_text.lower()
@@ -131,7 +131,7 @@ def test10():
     # Test a multi-label scenario including a date, to exercise delegation to DateReplacementStrategy.
     text = "Dr. Michael, a cardiologist from Canada, was born on 07/04/1970."
     labels = ("person", "profession", "location", "date")
-    q = zn.redact(text, labels)
+    q = zn.replace(text, labels)
     # Check that sensitive elements are removed from the anonymized text.
     for original in ["Dr. Michael", "cardiologist", "Canada", "07/04/1970"]:
         assert original.lower() not in q.anonymized_text.lower(), (
@@ -142,7 +142,7 @@ def test10():
 def test11():
     text = "John, who is from Japan moved to the USA last month. u"
     labels = ("name", "location")
-    q = zn.redact(text, labels)
+    q = zn.replace(text, labels)
     # Check that the original name and locations do not appear.
     assert "john" not in q.anonymized_text.lower(), "Original name 'John' found"
     assert "japan" not in q.anonymized_text.lower(), "Original location 'Japan' found"
@@ -153,7 +153,7 @@ def test11():
 def test12():
     text = "John riggins, who is from Japan moved to the USA last month. u"
     labels = ("name", "location")
-    q = zn.redact(text, labels)
+    q = zn.replace(text, labels)
     # Ensure that both first and last names are replaced.
     assert "John riggins" not in q.anonymized_text.lower(), "Original name 'John' found"
     # Ensure that the locations are replaced.
