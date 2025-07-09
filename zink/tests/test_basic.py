@@ -41,7 +41,7 @@ def test03():
 def test04():
     text = "John Doe dialled his mother at 992-234-3456 and then went out for a walk."
     labels = ("person", "phone number", "relationship")
-    q = zn.replace(text, labels)
+    q = zn.redact(text, labels)
     assert (
         "John Doe" not in q.anonymized_text
         and "992-234-3456" not in q.anonymized_text
@@ -97,7 +97,7 @@ def test07():
     # The human_entity_roles logic should replace both names.
     text = "Dr. John Doe operated on patient Peter Baxter."
     labels = ("person",)
-    q = zn.replace(text, labels)
+    q = zn.redact(text, labels)
     # Check that both names have been replaced (i.e. original names do not appear)
     assert (
         "John Doe" not in q.anonymized_text and "Peter Baxter" not in q.anonymized_text
@@ -108,7 +108,7 @@ def test08():
     # Test a location where the text is a country (using countries_data via file).
     text = "The conference was held in Japan."
     labels = ("location",)
-    q = zn.replace(text, labels)
+    q = zn.redact(text, labels)
     # Ensure "Japan" is not present; it should be replaced by another country
     assert "japan" not in q.anonymized_text.lower(), (
         "Country name 'Japan' was not replaced"
