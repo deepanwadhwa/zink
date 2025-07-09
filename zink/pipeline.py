@@ -2,13 +2,12 @@
 
 import warnings
 warnings.filterwarnings("ignore")
-import random
-from collections import defaultdict
+
 from functools import lru_cache
 from zink.extractor import _DEFAULT_EXTRACTOR
 from zink.merger import EntityMerger
 from zink.replacer import EntityReplacer
-from zink.result import PseudonymizationResult, ReplacementDetail
+from zink.result import PseudonymizationResult
 from .passage_processors import extract_entities_in_parallel
 
 class Pseudonymizer:
@@ -51,135 +50,42 @@ class Pseudonymizer:
     #
     # 3) Public Methods
     #
-    # def redact(self, text, categories=None, placeholder=None,
-    #            use_cache=True, auto_parallel=False, chunk_size=1000, max_workers=4, numbered_entities=False):
-    #     """
-    #     If auto_parallel=True & text is large, do parallel extraction.
-    #     Else do single-pass extraction.
-    #     If use_cache=True, we call the cached single-pass method.
-    #     """
-    #     if len(text) > chunk_size:
-    #         auto_parallel = True
-    #     if auto_parallel and len(text) > chunk_size:
-    #         merged = self._parallel_extraction(text, chunk_size, max_workers, categories)
-    #         anonymized = self._do_redact(text, merged, placeholder, numbered_entities=numbered_entities)
-    #     else:
-    #         # single-pass
-    #         if use_cache:
-    #             # Convert categories to a tuple for caching
-    #             cat_tuple = tuple(categories) if categories else tuple()
-    #             merged = self._cached_single_pass_extraction(text, cat_tuple)
-    #         else:
-    #             merged = self._single_pass_extraction(text, categories)
-    #         anonymized = self._do_redact(text, merged, placeholder, numbered_entities=numbered_entities)
-
-    #     return PseudonymizationResult(
-    #         original_text=text,
-    #         anonymized_text=anonymized,
-    #         replacements=merged,
-    #         features={"num_replacements": len(merged)},
-    #     )
-
-    def redact(self, text, categories=None, placeholder=None, use_cache=True, 
-               auto_parallel=False, chunk_size=1000, max_workers=4, numbered_entities=False):
-        
-        if len(text) > chunk_size and auto_parallel:
+    def redact(self, text, categories=None, placeholder=None,
+               use_cache=True, auto_parallel=False, chunk_size=1000, max_workers=4):
+        """
+        If auto_parallel=True & text is large, do parallel extraction.
+        Else do single-pass extraction.
+        If use_cache=True, we call the cached single-pass method.
+        """
+        if len(text) > chunk_size:
+            auto_parallel = True
+        if auto_parallel and len(text) > chunk_size:
             merged = self._parallel_extraction(text, chunk_size, max_workers, categories)
+            anonymized = self._do_redact(text, merged, placeholder)
         else:
+            # single-pass
             if use_cache:
+                # Convert categories to a tuple for caching
                 cat_tuple = tuple(categories) if categories else tuple()
                 merged = self._cached_single_pass_extraction(text, cat_tuple)
             else:
                 merged = self._single_pass_extraction(text, categories)
-        
-        anonymized_text, detailed_replacements = self._do_redact(text, merged, placeholder, numbered_entities)
+            anonymized = self._do_redact(text, merged, placeholder)
 
         return PseudonymizationResult(
             original_text=text,
-            anonymized_text=anonymized_text,
-            replacements=detailed_replacements,
+            anonymized_text=anonymized,
+            replacements=merged,
             features={"num_replacements": len(merged)},
-
         )
 
-    # def _do_redact(self, text, merged_entities, placeholder):
-    #     """Naive in-place string replacement for redaction."""
-    #     result_text = text
-    #     for e in reversed(merged_entities):
-    #         repl = placeholder or f"{e['label']}_REDACTED"
-    #         result_text = result_text[:e["start"]] + repl + result_text[e["end"]:]
-    #     return result_text
-
-    # def _do_redact(self, text, merged_entities, placeholder, numbered_entities=False):
-    #     """Replaces entities with placeholders, with an option for numbered redaction."""
-    #     result_text = text
-    #     replacements_to_apply = []
-        
-    #     if numbered_entities:
-    #         used_ids = defaultdict(set)
-    #         for e in merged_entities:
-    #             label = e['label']
-                
-    #             # Generate a unique 4-digit random ID for the label
-    #             while True:
-    #                 rand_id = str(random.randint(1000, 9999))
-    #                 if rand_id not in used_ids[label]:
-    #                     used_ids[label].add(rand_id)
-    #                     break
-                
-    #             repl = f"{label}_{rand_id}_REDACTED"
-    #             replacements_to_apply.append((e['start'], e['end'], repl))
-    #     else:
-    #         for e in merged_entities:
-    #             # Uses original casing, not .upper()
-    #             repl = placeholder or f"{e['label']}_REDACTED"
-    #             replacements_to_apply.append((e['start'], e['end'], repl))
-
-    #     # Apply all replacements from the end of the string to the start to preserve indices.
-    #     for start, end, repl in reversed(replacements_to_apply):
-    #         result_text = result_text[:start] + repl + result_text[end:]
-            
-    #     return result_text
-
-
-        # MODIFIED: This method now returns both the text and the list of replacement details.
-    def _do_redact(self, text, merged_entities, placeholder, numbered_entities=False):
+    def _do_redact(self, text, merged_entities, placeholder):
+        """Naive in-place string replacement for redaction."""
         result_text = text
-        replacements_to_apply = [] 
-        detailed_replacements = [] 
-
-        if numbered_entities:
-            used_ids = defaultdict(set)
-            for e in merged_entities:
-                label = e['label']
-                while True:
-                    rand_id = str(random.randint(1000, 9999))
-                    if rand_id not in used_ids[label]:
-                        used_ids[label].add(rand_id)
-                        break
-                
-                # This is the generated placeholder string (what you call the uuid)
-                pseudonym = f"{label}_{rand_id}_REDACTED"
-                replacements_to_apply.append((e['start'], e['end'], pseudonym))
-                
-                # Here, we add the 'pseudonym' to the final replacement object
-                detailed_replacements.append(ReplacementDetail(
-                    label=label, original=e['text'], pseudonym=pseudonym,
-                    start=e['start'], end=e['end'], score=e.get('score', 1.0)
-                ))
-        else:
-            for e in merged_entities:
-                pseudonym = placeholder or f"{e['label']}_REDACTED"
-                replacements_to_apply.append((e['start'], e['end'], pseudonym))
-                detailed_replacements.append(ReplacementDetail(
-                    label=e['label'], original=e['text'], pseudonym=pseudonym,
-                    start=e['start'], end=e['end'], score=e.get('score', 1.0)
-                ))
-
-        for start, end, repl in reversed(replacements_to_apply):
-            result_text = result_text[:start] + repl + result_text[end:]
-            
-        return result_text, detailed_replacements
+        for e in reversed(merged_entities):
+            repl = placeholder or f"{e['label']}_REDACTED"
+            result_text = result_text[:e["start"]] + repl + result_text[e["end"]:]
+        return result_text
 
     def replace(self, text, categories=None, user_replacements=None,
                 ensure_consistency=True, use_cache=True,
