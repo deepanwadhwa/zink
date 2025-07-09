@@ -8,10 +8,6 @@
 </div>
 ZINK is a Python package designed for zero-shot anonymization of entities within unstructured text data. It allows you to redact or replace sensitive information based on specified entity labels.
 
-## Update
-With version >=0.4, we are moving from simple NER models to their onnx versions. I hope you enjoy the acceleration gains. The package will download the onnx version of the 
-underlying model(s) when you update.
-
 ## Description
 
 In today's data-driven world, protecting sensitive information is paramount. ZINK provides a simple and effective solution for anonymizing text data by identifying and masking entities such as names, ages, phone numbers, medical conditions, and more. With ZINK, you can ensure data privacy while still maintaining the utility of your text data for analysis and processing.
@@ -94,6 +90,46 @@ result = zink.replace_with_my_data(text, labels, user_replacements=custom_replac
 print(result.anonymized_text)
 # Possible Output: "Alice works at OpenAI and drives a Honda."
 ```
+
+### Shielding LLM and API Calls (Decorator)
+
+For advanced use cases, like protecting sensitive data in a RAG pipeline or before calling an external LLM API, you can use the `@zink.shield` decorator. It provides a complete "shield" that automatically anonymizes function inputs and re-identifies the outputs.
+
+This handles the full anonymization and re-identification cycle for you.
+
+**Example:**
+
+```python
+import zink as zn
+
+# This mock function simulates calling an external API (like OpenAI or Gemini)
+@zn.shield(target_arg='prompt', labels=('person', 'company'))
+def call_sensitive_api(prompt: str):
+    """
+    This function is 'shielded'. The decorator will anonymize the 'prompt'
+    argument before this function is executed and re-identify its return value.
+    """
+    # The prompt received here is already anonymized by the decorator.
+    # The external API would process it and return a response with placeholders.
+    # For this example, we'll simulate that response.
+    # e.g., prompt would be "Report for person_1234_REDACTED from company_5678_REDACTED."
+    
+    anonymized_response = f"Analysis for {prompt.split(' ')[2]} from {prompt.split(' ')[4]} is complete."
+    return anonymized_response
+
+# The original, sensitive text
+sensitive_data = "Report for John Doe from Acme Inc."
+
+# Call the function as you normally would. The decorator handles everything.
+final_result = call_sensitive_api(prompt=sensitive_data)
+
+# The final result is already re-identified.
+print(final_result)
+
+Analysis for John Doe from Acme Inc. is complete.
+
+```
+
 ## Under the hood:
 
 ### [GLiNER](https://github.com/urchade/GLiNER):
