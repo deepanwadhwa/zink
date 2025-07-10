@@ -14,25 +14,6 @@ class EntityExtractor:
         # NuZero requires lower-cased labels.
         self.labels = ["person", "date", "location"]
 
-    # def predict(self, text, labels=None):
-    #     """
-    #     Predict entities in the given text.
-
-    #     Parameters:
-    #         text (str): The input text.
-    #         labels (list of str, ): Only entities with these labels will be returned.
-    #             If None, all detected entities are returned.
-                
-    #     Returns:
-    #         list of dict: A list of dictionaries, each containing 'start', 'end', 'label', and 'text'.
-    #     """
-    #     if labels is not None:
-    #         labels = [label.lower() for label in labels]
-    #     else:
-    #         labels = self.labels
-        
-    #     return self.model.predict_entities(text, labels)
-
     def predict(self, text, labels=None, max_passes=2):
         """
         Iteratively finds entities by masking found entities and re-running the model.
@@ -59,8 +40,15 @@ class EntityExtractor:
         for _ in range(max_passes):
             current_text_to_process = "".join(mutable_text_list)
             
-            # 1. Call the model on the current version of the text
-            newly_found_entities = self.model.predict_entities(current_text_to_process, predict_labels)
+            if _ == 0:
+                # 1. Call the model on the current version of the text
+                newly_found_entities = self.model.predict_entities(current_text_to_process, predict_labels)
+            else:
+                # increased threshold for subsequent passes
+                # This helps in focusing on more confident predictions after initial masking.
+                # The threshold can be adjusted based on the model's performance.
+                newly_found_entities = self.model.predict_entities(current_text_to_process, predict_labels, threshold=0.9)
+
 
             # If the model finds nothing, we can stop
             if not newly_found_entities:
