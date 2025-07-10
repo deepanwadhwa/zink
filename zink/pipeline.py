@@ -102,72 +102,44 @@ class Pseudonymizer:
 
         )
 
-    # def _do_redact(self, text, merged_entities, placeholder):
-    #     """Naive in-place string replacement for redaction."""
-    #     result_text = text
-    #     for e in reversed(merged_entities):
-    #         repl = placeholder or f"{e['label']}_REDACTED"
-    #         result_text = result_text[:e["start"]] + repl + result_text[e["end"]:]
-    #     return result_text
-
-    # def _do_redact(self, text, merged_entities, placeholder, numbered_entities=False):
-    #     """Replaces entities with placeholders, with an option for numbered redaction."""
-    #     result_text = text
-    #     replacements_to_apply = []
-        
-    #     if numbered_entities:
-    #         used_ids = defaultdict(set)
-    #         for e in merged_entities:
-    #             label = e['label']
-                
-    #             # Generate a unique 4-digit random ID for the label
-    #             while True:
-    #                 rand_id = str(random.randint(1000, 9999))
-    #                 if rand_id not in used_ids[label]:
-    #                     used_ids[label].add(rand_id)
-    #                     break
-                
-    #             repl = f"{label}_{rand_id}_REDACTED"
-    #             replacements_to_apply.append((e['start'], e['end'], repl))
-    #     else:
-    #         for e in merged_entities:
-    #             # Uses original casing, not .upper()
-    #             repl = placeholder or f"{e['label']}_REDACTED"
-    #             replacements_to_apply.append((e['start'], e['end'], repl))
-
-    #     # Apply all replacements from the end of the string to the start to preserve indices.
-    #     for start, end, repl in reversed(replacements_to_apply):
-    #         result_text = result_text[:start] + repl + result_text[end:]
-            
-    #     return result_text
-
-
-        # MODIFIED: This method now returns both the text and the list of replacement details.
     def _do_redact(self, text, merged_entities, placeholder, numbered_entities=False):
+        """Replaces entities with placeholders, ensuring consistency for numbered redaction."""
         result_text = text
-        replacements_to_apply = [] 
-        detailed_replacements = [] 
+        replacements_to_apply = []
+        detailed_replacements = []
 
         if numbered_entities:
-            used_ids = defaultdict(set)
+            # Map (label, text) -> unique_id to ensure consistency
+            entity_to_id_map = {}
+            # Track used IDs per label to avoid collisions
+            used_ids_per_label = defaultdict(set)
+
             for e in merged_entities:
                 label = e['label']
-                while True:
-                    rand_id = str(random.randint(1000, 9999))
-                    if rand_id not in used_ids[label]:
-                        used_ids[label].add(rand_id)
-                        break
+                original_text = e['text']
+                entity_key = (label, original_text)
+
+                # If we've seen this entity before, reuse its ID.
+                if entity_key in entity_to_id_map:
+                    rand_id = entity_to_id_map[entity_key]
+                else:
+                    # Otherwise, generate a new unique ID and store it.
+                    while True:
+                        rand_id = str(random.randint(1000, 9999))
+                        if rand_id not in used_ids_per_label[label]:
+                            used_ids_per_label[label].add(rand_id)
+                            entity_to_id_map[entity_key] = rand_id
+                            break
                 
-                # This is the generated placeholder string (what you call the uuid)
                 pseudonym = f"{label}_{rand_id}_REDACTED"
                 replacements_to_apply.append((e['start'], e['end'], pseudonym))
                 
-                # Here, we add the 'pseudonym' to the final replacement object
                 detailed_replacements.append(ReplacementDetail(
-                    label=label, original=e['text'], pseudonym=pseudonym,
+                    label=label, original=original_text, pseudonym=pseudonym,
                     start=e['start'], end=e['end'], score=e.get('score', 1.0)
                 ))
         else:
+            # Standard (non-numbered) redaction
             for e in merged_entities:
                 pseudonym = placeholder or f"{e['label']}_REDACTED"
                 replacements_to_apply.append((e['start'], e['end'], pseudonym))
@@ -176,6 +148,7 @@ class Pseudonymizer:
                     start=e['start'], end=e['end'], score=e.get('score', 1.0)
                 ))
 
+        # Apply all replacements from the end to the start to preserve indices.
         for start, end, repl in reversed(replacements_to_apply):
             result_text = result_text[:start] + repl + result_text[end:]
             

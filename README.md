@@ -22,10 +22,14 @@ ZINK leverages the power of zero-shot techniques, meaning it doesn't require pri
 -   **Easy integration:** Simple and intuitive API for seamless integration into your Python projects.
 
 ## Installation
-
+```bash
+uv add zink
+```
+#### or
 ```bash
 pip install zink
 ```
+
 ## Usage
 
 ### For details, check out the [Documentation](https://zink.readthedocs.io/en/latest/)
