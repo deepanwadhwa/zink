@@ -8,18 +8,29 @@
 </div>
 ZINK is a Python package designed for zero-shot anonymization of entities within unstructured text data. It allows you to redact or replace sensitive information based on specified entity labels.
 
-## Description
+### Abstract
 
-In today's data-driven world, protecting sensitive information is paramount. ZINK provides a simple and effective solution for anonymizing text data by identifying and masking entities such as names, ages, phone numbers, medical conditions, and more. With ZINK, you can ensure data privacy while still maintaining the utility of your text data for analysis and processing.
+The proliferation of Large Language Models (LLMs) heightens challenges in protecting Personal Identifiable Information (PII), particularly Quasi-Identifiers (QIs), in unstructured text. QIs enable re-identification when combined and pose significant privacy risks, highlighted by their use in security verification. Current approaches face limitations: large LLMs offer flexibility for detecting diverse QIs but are often hindered by high computational costs, while traditional supervised NER models require domain-specific labeled data and fail to generalize to heterogeneous, unseen QI types. Furthermore, evaluating QI identification methods is hampered by the lack of diverse benchmarks. To address this need for evaluation resources, we present the Quasi-Identifier Benchmark (QIB), a new corpus with 1750 examples across 35 diverse QI categories (e.g., personal preferences, security answers) designed to assess model robustness against QI heterogeneity. To facilitate the application of flexible identification methods on such diverse data, we also introduce ZINK (Zero-shot INK), a Python package providing a unified framework for applying existing zero-shot NER models to QI identification and anonymization, simplifying model integration and offering configurable redaction and replacement.
 
-ZINK leverages the power of zero-shot techniques, meaning it doesn't require prior training on specific datasets. You simply provide the text and the entity labels you want to anonymize, and ZINK handles the rest.
+Evaluation using ZINK on QIB shows strong performance, achieving an F4-score of 0.9206. This result outperforms both supervised models like BERT (0.6109) and paid large language models like GPT-4-Nano (0.9007), while remaining competitive with top-tier models like GPT-4 (0.9726). QIB and ZINK provide valuable resources enabling standardized evaluation and development of flexible, practical solutions for quasi-identifier anonymization in text.
 
-## Features
+### Benchmarks
 
--   **Zero-shot anonymization:** No training data or pre-trained models required.
--   **Flexible entity labeling:** Anonymize any type of entity by specifying custom labels.
--   **Redaction and replacement:** Choose between redacting entities (replacing them with `[LABEL]_REDACTED`) or replacing them with a generic placeholder.
--   **Easy integration:** Simple and intuitive API for seamless integration into your Python projects.
+Here is a comparison of ZINK against other models on Quasi Identifier Benchmark ([QIB])(https://huggingface.co/datasets/deepanwa/QIB)
+
+
+
+| Model                  | Overall Recall | Overall Precision | Overall F4_SCORE | True Positives (TP) | False Negatives (FN) | Total Redaction Markers |
+| :--------------------- | :------------- | :---------------- | :--------------- | :------------------ | :------------------- | :---------------------- |
+| **gpt_41_nano** | 0.8971         | 0.962             | 0.9007           | 1570                | 180                  | 1632                    |
+| **gpt_41** | 0.9726         | 0.9737            | 0.9726           | 1702                | 48                   | 1748                    |
+| **zink_single** | 0.9            | 0.8858            | 0.8992           | 1575                | 175                  | 1778                    |
+| **zink_topic** | 0.9126         | 0.6502            | 0.8914           | 1597                | 153                  | 2456                    |
+| **zink_human (run 1)** | 0.9371         | 0.6597            | 0.9145           | 1640                | 110                  | 2486                    |
+| **zink_human (run 2)** | 0.9446         | 0.6544            | 0.9206           | 1653                | 97                   | 2526                    |
+| **tars_topic** | 0.5983         | 0.762             | 0.6059           | 1047                | 703                  | 1374                    |
+| **bert** | 0.628          | 0.4255            | 0.6109           | 1099                | 651                  | 2583                    |
+
 
 ## Installation
 ```bash
