@@ -22,7 +22,12 @@ class Pseudonymizer:
     #
     def _single_pass_extraction(self, text, categories):
         """Plain extraction & merging (uncached)."""
-        raw_ents = self.extractor.predict(text, labels=categories)
+        if self.extractor.model is None:
+             raise ImportError(
+                "The 'gliner' package is required for extraction but is not installed. "
+                "Please install it with 'pip install zink[cpu]' or 'pip install zink[gpu]'."
+            )
+        raw_ents = self.extractor.predict2(text, labels=categories)
         return self.merger.merge(raw_ents, text)
 
     @lru_cache(maxsize=128)
@@ -31,7 +36,13 @@ class Pseudonymizer:
         Same as _single_pass_extraction, but decorated with lru_cache.
         categories must be passed as a tuple for caching to work.
         """
-        raw_ents = self.extractor.predict(text, labels=categories_tuple)
+
+        if self.extractor.model is None:
+             raise ImportError(
+                "The 'gliner' package is required for extraction but is not installed. "
+                "Please install it with 'pip install zink[cpu]' or 'pip install zink[gpu]'."
+            )
+        raw_ents = self.extractor.predict2(text, labels=categories_tuple)
         return self.merger.merge(raw_ents, text)
     
     #
@@ -42,6 +53,11 @@ class Pseudonymizer:
         Extract in parallel, then merge globally.
         (Typically not cached, but you can do so if you want.)
         """
+        if self.extractor.model is None:
+             raise ImportError(
+                "The 'gliner' package is required for extraction but is not installed. "
+                "Please install it with 'pip install zink[cpu]' or 'pip install zink[gpu]'."
+            )
         all_ents = extract_entities_in_parallel(
             text, chunk_size=chunk_size, max_workers=max_workers, categories=categories
         )
