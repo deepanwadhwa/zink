@@ -14,11 +14,194 @@ The proliferation of Large Language Models (LLMs) heightens challenges in protec
 
 Evaluation using ZINK on QIB shows strong performance, achieving an F4-score of 0.9206. This result outperforms both supervised models like BERT (0.6109) and paid large language models like GPT-4-Nano (0.9007), while remaining competitive with top-tier models like GPT-4 (0.9726). QIB and ZINK provide valuable resources enabling standardized evaluation and development of flexible, practical solutions for quasi-identifier anonymization in text.
 
-### Benchmarks
+## Installation
+
+Install the package using `uv` or `pip`.
+
+**CPU Support (Recommended for most users):**
+```bash
+uv add "zink[cpu]"
+# or
+pip install "zink[cpu]"
+```
+
+**GPU Support:**
+```bash
+pip install "zink[gpu]"
+```
+
+## Quick Start
+
+Get started with ZINK in just a few lines of code. The `redact` function replaces identified entities with `[LABEL]_REDACTED`.
+
+```python
+import zink as zn
+
+text = "John works as a doctor and plays football after work and drives a toyota."
+labels = ("person", "profession", "sport", "car")
+
+result = zn.redact(text, labels)
+print(result.anonymized_text)
+```
+
+**Output:**
+```text
+person_REDACTED works as a profession_REDACTED and plays sport_REDACTED after work and drives a car_REDACTED.
+```
+
+## Key Features
+
+### 1. Replacing Entities
+Instead of simple redaction, you can replace entities with realistic synthetic data using the `replace` function. ZINK uses the Faker library to generate context-aware replacements.
+
+```python
+import zink as zn
+
+text = "John Doe dialled his mother at 992-234-3456 and then went out for a walk."
+labels = ("person", "phone number", "relationship")
+
+result = zn.replace(text, labels)
+print(result.anonymized_text)
+```
+
+**Possible Output:**
+```text
+Warren Buffet dialled his Uncle at 2347789287 and then went out for a walk.
+```
+
+### 2. Custom Replacements (Bring Your Own Data)
+You can provide your own dictionary of replacements for specific labels. This is useful for consistent mapping or using domain-specific datasets.
+
+```python
+import zink as zn
+
+text = "Melissa works at Google and drives a Tesla."
+labels = ("person", "company", "car")
+custom_replacements = {
+    "person": "Alice",
+    "company": "OpenAI",
+    "car": ("Honda", "Toyota")
+}
+
+result = zn.replace_with_my_data(text, labels, user_replacements=custom_replacements)
+print(result.anonymized_text)
+```
+
+**Possible Output:**
+```text
+Alice works at OpenAI and drives a Honda.
+```
+
+### 3. Shielding LLM and API Calls
+Protect sensitive data in your RAG pipelines or API calls using the `@zink.shield` decorator. It automatically anonymizes inputs before they reach the function and re-identifies the output, creating a secure "shield" around your logic.
+
+```python
+import zink as zn
+
+# This mock function simulates calling an external API (like OpenAI or Gemini)
+@zn.shield(target_arg='prompt', labels=('person', 'company'))
+def call_sensitive_api(prompt: str):
+    # The prompt received here is already anonymized.
+    # e.g., "Report for person_REDACTED from company_REDACTED."
+    return f"Analysis for {prompt} is complete."
+
+# The original, sensitive text
+sensitive_data = "Report for John Doe from Acme Inc."
+
+# Call the function normally. The decorator handles anonymization and re-identification.
+final_result = call_sensitive_api(prompt=sensitive_data)
+
+print(final_result)
+```
+
+**Output:**
+```text
+Analysis for John Doe from Acme Inc. is complete.
+```
+
+## Docker Support
+
+You can run `zink` easily using Docker. The image comes with the model pre-installed and exposes a REST API.
+
+### 1. Build the Image
+Run this command in the root of the repository:
+```bash
+docker build -t zink .
+```
+
+### 2. Run the Container
+Start the API server on port 8000:
+```bash
+docker run --rm -p 8000:8000 zink
+```
+
+> **Tip:** If port 8000 is already in use (e.g., you see a "Bind for 0.0.0.0:8000 failed" error), map it to a different port like 8001:
+> ```bash
+> docker run --rm -p 8001:8000 zink
+> ```
+
+### 3. Use the API
+Once the container is running, you can send requests to the `/redact` endpoint.
+
+**Example Request:**
+```bash
+curl -X POST "http://localhost:8000/redact" \
+     -H "Content-Type: application/json" \
+     -d '{"text": "John Doe lives in New York.", "labels": ["person", "location"]}'
+```
+*(Note: If you used port 8001, replace `localhost:8000` with `localhost:8001`)*
+
+**Example Response:**
+```json
+{
+  "original_text": "John Doe lives in New York.",
+  "anonymized_text": "<PERSON> lives in <LOCATION>.",
+  "replacements": [
+    {
+      "label": "person",
+      "original": "John Doe",
+      "pseudonym": "<PERSON>",
+      "start": 0,
+      "end": 8,
+      "score": 0.99
+    },
+    {
+      "label": "location",
+      "original": "New York",
+      "pseudonym": "<LOCATION>",
+      "start": 18,
+      "end": 26,
+      "score": 0.99
+    }
+  ]
+}
+```
+
+### Run Tests
+To verify the installation, you can run the test suite inside the container:
+```bash
+docker run --rm zink pytest zink/tests
+```
+
+## How It Works
+
+### [GLiNER](https://github.com/urchade/GLiNER)
+GLiNER is a Named Entity Recognition (NER) model capable of identifying any entity type using a bidirectional transformer encoder (BERT-like). It provides a practical alternative to traditional NER models, which are limited to predefined entities, and Large Language Models (LLMs) that, despite their flexibility, are costly and large for resource-constrained scenarios.
+
+### [NuNer](https://huggingface.co/numind/NuNER_Zero)
+NuNerZero is a compact, zero-shot Named Entity Recognition model that leverages the robust GLiNER architecture for efficient token classification. It requires lower-cased labels and processes inputs as a concatenation of entity types and text, enabling it to detect arbitrarily long entities.
+
+### [Faker](https://faker.readthedocs.io/) & Training Data
+Zink leverages both the Faker library and the extensive training data from the GLiNER model to generate realistic, synthetic replacements for sensitive information.
+- **GLiNER Training Data**: Access to thousands of label categories from the model's training set for diverse and accurate replacements.
+- **Dynamic Data Generation**: Faker generates context-aware values (e.g., names, addresses).
+- **Location Handling**: Swaps countries/cities with valid alternatives.
+- **Date Replacement**: Handles various date formats intelligently.
+- **Roles**: Differentiates between roles (e.g., doctor vs. patient) for appropriate naming.
+
+## Benchmarks
 
 Here is a comparison of ZINK against other models on Quasi Identifier Benchmark ([QIB])(https://huggingface.co/datasets/deepanwa/QIB)
-
-
 
 | Model                  | Overall Recall | Overall Precision | Overall F4_SCORE | True Positives (TP) | False Negatives (FN) | Total Redaction Markers |
 | :--------------------- | :------------- | :---------------- | :--------------- | :------------------ | :------------------- | :---------------------- |
@@ -31,168 +214,29 @@ Here is a comparison of ZINK against other models on Quasi Identifier Benchmark 
 | **tars_topic** | 0.5983         | 0.762             | 0.6059           | 1047                | 703                  | 1374                    |
 | **bert** | 0.628          | 0.4255            | 0.6109           | 1099                | 651                  | 2583                    |
 
-
-## Installation
-```bash
-uv add zink
-```
-#### or
-```bash
-pip install zink
-```
-
-## Usage
-
-### For details, check out the [Documentation](https://zink.readthedocs.io/en/latest/)
-
-### Redacting Entities
-The redact function replaces identified entities with [LABEL]_REDACTED.
-
-```bash
-import zink as zn
-
-text = "John works as a doctor and plays football after work and drives a toyota."
-labels = ("person", "profession", "sport", "car")
-result = zn.redact(text, labels)
-print(result.anonymized_text)
-Example output:
-
-person_REDACTED works as a profession_REDACTED and plays sport_REDACTED after work and drives a car_REDACTED.
-```
-
-### Replacing Entities
-The replace function replaces identified entities with a random entity of the same type.
-
-```bash
-import zink as zn
-
-text = "John Doe dialled his mother at 992-234-3456 and then went out for a walk."
-labels = ("person", "phone number", "relationship")
-result = zn.replace(text, labels)
-print(result.anonymized_text)
-
-#Possible output: Warren Buffet dialled his Uncle at 2347789287 and then went out for a walk.
-```
-
-Another example:
-
-```bash
-import zink as zn
-
-text = "Patient, 33 years old, was admitted with a chest pain"
-labels = ("age", "medical condition")
-result = zn.replace(text, labels)
-print(result.anonymized_text)
-Example output:
-
-Patient, 78 years old, was admitted with a Diabetes Mellitus.
-```
-
-### Replacing Entities with your own data
-This feature is for the scenario when you want to replace entities with your own dataset. Unlike the standard replace method, this function does not use caching and therefore accepts replacements as dictionaries directly, simplifying its use for dynamic or runtime-defined pseudonyms.
-
-```bash
-text = "Melissa works at Google and drives a Tesla."
-labels = ("person", "company", "car")
-custom_replacements = {
-    "person": "Alice",
-    "company": "OpenAI",
-    "car": ("Honda", "Toyota")
-    }
-
-result = zink.replace_with_my_data(text, labels, user_replacements=custom_replacements)
-
-print(result.anonymized_text)
-# Possible Output: "Alice works at OpenAI and drives a Honda."
-```
-
-### Shielding LLM and API Calls (Decorator)
-
-For advanced use cases, like protecting sensitive data in a RAG pipeline or before calling an external LLM API, you can use the `@zink.shield` decorator. It provides a complete "shield" that automatically anonymizes function inputs and re-identifies the outputs.
-
-This handles the full anonymization and re-identification cycle for you.
-
-**Example:**
-
-```python
-import zink as zn
-
-# This mock function simulates calling an external API (like OpenAI or Gemini)
-@zn.shield(target_arg='prompt', labels=('person', 'company'))
-def call_sensitive_api(prompt: str):
-    """
-    This function is 'shielded'. The decorator will anonymize the 'prompt'
-    argument before this function is executed and re-identify its return value.
-    """
-    # The prompt received here is already anonymized by the decorator.
-    # The external API would process it and return a response with placeholders.
-    # For this example, we'll simulate that response.
-    # e.g., prompt would be "Report for person_1234_REDACTED from company_5678_REDACTED."
-    
-    anonymized_response = f"Analysis for {prompt.split(' ')[2]} from {prompt.split(' ')[4]} is complete."
-    return anonymized_response
-
-# The original, sensitive text
-sensitive_data = "Report for John Doe from Acme Inc."
-
-# Call the function as you normally would. The decorator handles everything.
-final_result = call_sensitive_api(prompt=sensitive_data)
-
-# The final result is already re-identified.
-print(final_result)
-
-Analysis for John Doe from Acme Inc. is complete.
-
-```
-
-## Under the hood:
-
-### [GLiNER](https://github.com/urchade/GLiNER):
-GLiNER is a Named Entity Recognition (NER) model capable of identifying any entity type using a bidirectional transformer encoder (BERT-like). It provides a practical alternative to traditional NER models, which are limited to predefined entities, and Large Language Models (LLMs) that, despite their flexibility, are costly and large for resource-constrained scenarios.
-
-### [NuNer](https://huggingface.co/numind/NuNER_Zero):
-NuNerZero is a compact, zero-shot Named Entity Recognition model that leverages the robust GLiNER architecture for efficient token classification. It requires lower-cased labels and processes inputs as a concatenation of entity types and text, enabling it to detect arbitrarily long entities. Trained on the NuNER v2.0 dataset, NuNerZero achieves impressive performance, outperforming larger models like GLiNER-large-v2.1 by over 3% in token-level F1-score. This model is ideal for both research and practical applications where a streamlined, high-accuracy NER solution is essential.
-
-### [Faker](https://faker.readthedocs.io/)
-Zink now leverages the Faker library to generate realistic, synthetic replacements for sensitive information. This feature is relatively new and continues to evolve, enhancing our data masking capabilities while preserving contextual plausibility.
-
-#### How Faker Is Utilized
-Dynamic Data Generation:
-Faker is used to generate replacement values for various entity types (e.g., names, addresses, dates). For example, when a human name is detected, Faker can provide a full name or first name based on context.
-
-#### Country and Location Handling:
-Our tool reads a list of country names (and their synonyms) from an external file. If a location entity matches one of these names, the system selects a different country from the list to mask the sensitive geographical data.
-
-#### Date Replacement:
-Date-related entities (such as dates, months, and days) are delegated to a dedicated strategy. For purely numeric dates (e.g., "12/02/1975"), the tool returns a Faker-generated date. For dates with explicit alphabetic month names, custom extraction and replacement logic is applied.
-
-#### Human Entity Roles:
-The system differentiates between various human roles (e.g., doctor, patient, engineer) using a predefined list of human entity roles. This allows for context-aware replacement, ensuring that names are replaced appropriately according to their role in the text.
-
-#### Current Status and Future Improvements
-##### New Feature in Beta:
-The Faker integration is one of our latest features, designed to deliver more natural and contextually relevant data replacements. While the current implementation covers many common cases, it is still under active development.
+## Development
 
 ### Testing
 To run the tests, navigate to the project directory and execute:
-
 ```bash
 pytest
 ```
+
+### Contributing
+Contributions are welcome! Please feel free to submit pull requests or open issues to suggest improvements or report bugs.
+
+1. Fork the repository.
+2. Create a new branch: `git checkout -b feature/your-feature`
+3. Make your changes.
+4. Commit your changes: `git commit -m 'Add your feature'`
+5. Push to the branch: `git push origin feature/your-feature`
+6. Submit a pull request.
+
 ### Citation
 If you are using this package for your work/research, use the below citation:
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15035072.svg)](https://doi.org/10.5281/zenodo.15035072)
 
 Wadhwa, D. (2025). ZINK: Zero-shot anonymization in unstructured text. (v0.2.1). Zenodo. https://doi.org/10.5281/zenodo.15035072
 
-### Contributing
-Contributions are welcome! Please feel free to submit pull requests or open issues to suggest improvements or report bugs.   
-
-Fork the repository.
-Create a new branch: git checkout -b feature/your-feature
-Make your changes.
-Commit your changes: git commit -m 'Add your feature'
-Push to the branch: git push origin feature/your-feature
-Submit a pull request.
-License
+### License
 This project is licensed under the Apache 2.0 License.
