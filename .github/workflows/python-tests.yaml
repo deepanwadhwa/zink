@@ -43,8 +43,13 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install .  # Installs your package from pyproject.toml
+        pip install ".[cpu]"  # Installs your package with cpu extras from pyproject.toml
         pip install pytest # Installs pytest
+
+    # Step 4: Setup Model (Workaround for GLiNER bug)
+    - name: Setup Model
+      run: |
+        python -c "from huggingface_hub import snapshot_download; import os; path = snapshot_download('deepanwa/NuNerZero_onnx'); open(os.path.join(path, 'pytorch_model.bin'), 'w').close()"
 
     # Step 4: Run tests with pytest
     - name: Run tests
