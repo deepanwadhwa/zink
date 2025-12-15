@@ -1,8 +1,9 @@
 # pipeline.py
-
 import warnings
 warnings.filterwarnings("ignore")
 import random
+import json
+import os
 from collections import defaultdict
 from functools import lru_cache
 from zink.extractor import _DEFAULT_EXTRACTOR
@@ -97,7 +98,7 @@ class Pseudonymizer:
     #     )
 
     def redact(self, text, categories=None, placeholder=None, use_cache=True, 
-               auto_parallel=False, chunk_size=1000, max_workers=4, numbered_entities=False):
+               auto_parallel=False, chunk_size=1000, max_workers=4, numbered_entities=False, mapping_file=None):
         
         if len(text) > chunk_size and auto_parallel:
             merged = self._parallel_extraction(text, chunk_size, max_workers, categories)
@@ -108,7 +109,7 @@ class Pseudonymizer:
             else:
                 merged = self._single_pass_extraction(text, categories)
         
-        anonymized_text, detailed_replacements = self._do_redact(text, merged, placeholder, numbered_entities)
+        anonymized_text, detailed_replacements = self._do_redact(text, merged, placeholder, numbered_entities, mapping_file=mapping_file)
 
         return PseudonymizationResult(
             original_text=text,
@@ -118,7 +119,7 @@ class Pseudonymizer:
 
         )
 
-    def _do_redact(self, text, merged_entities, placeholder, numbered_entities=False):
+    def _do_redact(self, text, merged_entities, placeholder, numbered_entities=False, mapping_file=None):
         """Replaces entities with placeholders, ensuring consistency for numbered redaction."""
         result_text = text
         replacements_to_apply = []
@@ -129,6 +130,22 @@ class Pseudonymizer:
             entity_to_id_map = {}
             # Track used IDs per label to avoid collisions
             used_ids_per_label = defaultdict(set)
+
+            # Load existing mapping if provided
+            if mapping_file and os.path.exists(mapping_file):
+                try:
+                    with open(mapping_file, 'r') as f:
+                        loaded_mapping = json.load(f)
+                        # Reconstruct entity_to_id_map and used_ids_per_label
+                        # Expected format: {"label": {"original_text": "id"}}
+                        for label, entries in loaded_mapping.items():
+                            for original_text, ent_id in entries.items():
+                                entity_to_id_map[(label, original_text)] = ent_id
+                                used_ids_per_label[label].add(ent_id)
+                except Exception as e:
+                    # Ideally log this, but for now we'll just proceed with empty mapping or raise?
+                    # Let's print a warning for now as we don't have a logger set up
+                    print(f"Warning: Failed to load mapping file {mapping_file}: {e}")
 
             for e in merged_entities:
                 label = e['label']
@@ -154,6 +171,22 @@ class Pseudonymizer:
                     label=label, original=original_text, pseudonym=pseudonym,
                     start=e['start'], end=e['end'], score=e.get('score', 1.0)
                 ))
+            
+            # Save updated mapping if provided
+            if mapping_file:
+                try:
+                    # Convert back to serializable format: {"label": {"original_text": "id"}}
+                    serializable_mapping = defaultdict(dict)
+                    # We need to merge with what we loaded if we want to be safe, 
+                    # but entity_to_id_map should contain everything we loaded + new stuff
+                    for (label, original_text), ent_id in entity_to_id_map.items():
+                        serializable_mapping[label][original_text] = ent_id
+                    
+                    with open(mapping_file, 'w') as f:
+                        json.dump(serializable_mapping, f, indent=2)
+                except Exception as e:
+                    print(f"Warning: Failed to save mapping file {mapping_file}: {e}")
+
         else:
             # Standard (non-numbered) redaction
             for e in merged_entities:
