@@ -101,24 +101,89 @@ class Pseudonymizer:
     def redact(self, text, categories=None, placeholder=None, use_cache=True, 
                auto_parallel=False, chunk_size=1000, max_workers=4, numbered_entities=False):
         
-        if len(text) > chunk_size and auto_parallel:
-            merged = self._parallel_extraction(text, chunk_size, max_workers, categories)
+        # 1. Parse exclusion markers
+        clean_text, protected_spans = self._parse_exclusions(text)
+
+        # 2. Run extraction on CLEAN text
+        if len(clean_text) > chunk_size and auto_parallel:
+            merged = self._parallel_extraction(clean_text, chunk_size, max_workers, categories)
         else:
             if use_cache:
                 cat_tuple = tuple(categories) if categories else tuple()
-                merged = self._cached_single_pass_extraction(text, cat_tuple)
+                merged = self._cached_single_pass_extraction(clean_text, cat_tuple)
             else:
-                merged = self._single_pass_extraction(text, categories)
+                merged = self._single_pass_extraction(clean_text, categories)
         
-        anonymized_text, detailed_replacements = self._do_redact(text, merged, placeholder, numbered_entities)
+        # 3. Filter out entities that overlap with protected spans
+        filtered_entities = []
+        for ent in merged:
+            is_protected = False
+            ent_start, ent_end = ent['start'], ent['end']
+            for p_start, p_end in protected_spans:
+                # Check for overlap
+                if (ent_start < p_end and ent_end > p_start):
+                    is_protected = True
+                    break
+            if not is_protected:
+                filtered_entities.append(ent)
+
+        # 4. Redact the clean text
+        anonymized_text, detailed_replacements = self._do_redact(clean_text, filtered_entities, placeholder, numbered_entities)
 
         return PseudonymizationResult(
-            original_text=text,
+            original_text=text, # Return original with *? Or clean? User asked for output without *, so clean_text is effectively the base.
+                                # But original_text usually means the input. 
+                                # Let's return the input 'text' as original_text.
             anonymized_text=anonymized_text,
             replacements=detailed_replacements,
-            features={"num_replacements": len(merged)},
+            features={"num_replacements": len(filtered_entities)},
 
         )
+
+    def _parse_exclusions(self, text):
+        """
+        Parses text for *word* patterns.
+        Returns:
+            clean_text: Text with * removed.
+            protected_spans: List of (start, end) tuples in clean_text coordinates that should be protected.
+        """
+        clean_text = ""
+        protected_spans = []
+        
+        i = 0
+        n = len(text)
+        clean_idx = 0
+        
+        while i < n:
+            if text[i] == '*':
+                # Check if it's a valid start of a protected span (simplistic check: find next *)
+                # We handle nested * or unmatched * by just treating them as chars if not paired?
+                # For simplicity, let's assume non-nested, greedy until next *.
+                # If no closing *, treat as literal *.
+                
+                # Find closing *
+                closing_idx = text.find('*', i + 1)
+                if closing_idx != -1:
+                    # Found a pair
+                    span_content = text[i+1:closing_idx]
+                    start_span = clean_idx
+                    clean_text += span_content
+                    clean_idx += len(span_content)
+                    end_span = clean_idx
+                    protected_spans.append((start_span, end_span))
+                    
+                    i = closing_idx + 1
+                else:
+                    # No closing *, treat as literal
+                    clean_text += text[i]
+                    clean_idx += 1
+                    i += 1
+            else:
+                clean_text += text[i]
+                clean_idx += 1
+                i += 1
+                
+        return clean_text, protected_spans
 
     def _do_redact(self, text, merged_entities, placeholder, numbered_entities=False):
         """Replaces entities with placeholders, ensuring consistency for numbered redaction."""

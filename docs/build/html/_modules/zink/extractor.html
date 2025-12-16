@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>zink.extractor &mdash; Zink 0.4.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
@@ -69,45 +69,294 @@
            <div itemprop="articleBody">
              
   <h1>Source code for zink.extractor</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gliner</span><span class="w"> </span><span class="kn">import</span> <span class="n">GLiNER</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
-
+<span></span><span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">gliner</span> <span class="kn">import</span> <span class="n">GLiNER</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">GLiNER</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">concurrent.futures</span>
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="EntityExtractor">
 <a class="viewcode-back" href="../../api.html#zink.extractor.EntityExtractor">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">EntityExtractor</span><span class="p">:</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<span class="k">class</span> <span class="nc">EntityExtractor</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;deepanwa/NuNerZero_onnx&quot;</span>
-    <span class="p">):</span>  <span class="c1"># previous model - numind/NuNerZero</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">GLiNER</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
-            <span class="n">model_name</span><span class="p">,</span> <span class="n">load_onnx_model</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">load_tokenizer</span><span class="o">=</span><span class="kc">True</span>
-        <span class="p">)</span>
+    <span class="p">):</span>  
+        <span class="c1"># previous model - numind/NuNerZero</span>
+        <span class="k">if</span> <span class="n">GLiNER</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">GLiNER</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+                <span class="n">model_name</span><span class="p">,</span> <span class="n">load_onnx_model</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">load_tokenizer</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span> <span class="o">=</span> <span class="n">model_name</span>
         <span class="c1"># NuZero requires lower-cased labels.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;person&quot;</span><span class="p">,</span> <span class="s2">&quot;date&quot;</span><span class="p">,</span> <span class="s2">&quot;location&quot;</span><span class="p">]</span>
+    
+    <span class="k">def</span> <span class="nf">_process_chunk_thread_safe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This worker runs in a thread and accesses the class&#39;s single model instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># --- Pass 1: Normal threshold on the original text ---</span>
+        <span class="n">pass1_entities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict_entities</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">thread_text</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">chunk</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+        <span class="c1"># --- Temporary Masking for Pass 2 ---</span>
+        <span class="n">temp_mutable_text</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thread_text</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">entity</span> <span class="ow">in</span> <span class="n">pass1_entities</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">entity</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">],</span> <span class="n">entity</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]):</span>
+                <span class="n">temp_mutable_text</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span>
+        <span class="n">masked_text_for_pass2</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">temp_mutable_text</span><span class="p">)</span>
+
+        <span class="c1"># --- Pass 2: High threshold on the temporarily masked text ---</span>
+        <span class="n">pass2_entities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict_entities</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">masked_text_for_pass2</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">chunk</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">pass1_entities</span> <span class="o">+</span> <span class="n">pass2_entities</span>
 
 <div class="viewcode-block" id="EntityExtractor.predict">
 <a class="viewcode-back" href="../../api.html#zink.extractor.EntityExtractor.predict">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_passes</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Predict entities in the given text.</span>
+<span class="sd">        Iteratively finds entities by masking found entities and re-running the model.</span>
 
 <span class="sd">        Parameters:</span>
 <span class="sd">            text (str): The input text.</span>
-<span class="sd">            labels (list of str, ): Only entities with these labels will be returned.</span>
-<span class="sd">                If None, all detected entities are returned.</span>
+<span class="sd">            labels (list of str, optional): Entity labels to predict. Defaults to None.</span>
+<span class="sd">            max_passes (int): A safeguard to prevent potential infinite loops.</span>
 <span class="sd">                </span>
 <span class="sd">        Returns:</span>
-<span class="sd">            list of dict: A list of dictionaries, each containing &#39;start&#39;, &#39;end&#39;, &#39;label&#39;, and &#39;text&#39;.</span>
+<span class="sd">            list of dict: A list of all unique entities found across all passes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">label</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">]</span>
+            <span class="n">predict_labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">label</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">labels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict_entities</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span></div>
+            <span class="n">predict_labels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span>
+
+        <span class="n">all_entities</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">processed_spans</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        
+        <span class="c1"># Use a list of characters for easy replacement</span>
+        <span class="n">mutable_text_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_passes</span><span class="p">):</span>
+            <span class="n">current_text_to_process</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">mutable_text_list</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="n">_</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># 1. Call the model on the current version of the text</span>
+                <span class="n">newly_found_entities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict_entities</span><span class="p">(</span><span class="n">current_text_to_process</span><span class="p">,</span> <span class="n">predict_labels</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># increased threshold for subsequent passes</span>
+                <span class="c1"># This helps in focusing on more confident predictions after initial masking.</span>
+                <span class="c1"># The threshold can be adjusted based on the model&#39;s performance.</span>
+                <span class="n">newly_found_entities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict_entities</span><span class="p">(</span><span class="n">current_text_to_process</span><span class="p">,</span> <span class="n">predict_labels</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+
+
+            <span class="c1"># If the model finds nothing, we can stop</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">newly_found_entities</span><span class="p">:</span>
+                <span class="k">break</span>
+            
+            <span class="c1"># Filter out any entities we&#39;ve already processed to avoid loops</span>
+            <span class="n">unique_new_entities</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">ent</span> <span class="ow">in</span> <span class="n">newly_found_entities</span><span class="p">:</span>
+                <span class="n">span</span> <span class="o">=</span> <span class="p">(</span><span class="n">ent</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">],</span> <span class="n">ent</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">span</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">processed_spans</span><span class="p">:</span>
+                    <span class="n">unique_new_entities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ent</span><span class="p">)</span>
+                    <span class="n">processed_spans</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">span</span><span class="p">)</span>
+            
+            <span class="c1"># If there were no *genuinely* new entities, stop</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">unique_new_entities</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="c1"># 2. Add the unique new finds to our master list</span>
+            <span class="n">all_entities</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">unique_new_entities</span><span class="p">)</span>
+
+            <span class="c1"># 3. &quot;Mask&quot; the found entities by replacing them with spaces</span>
+            <span class="c1"># This preserves the indices for the next pass.</span>
+            <span class="k">for</span> <span class="n">entity</span> <span class="ow">in</span> <span class="n">unique_new_entities</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">entity</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">],</span> <span class="n">entity</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]):</span>
+                    <span class="n">mutable_text_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span>
+        
+        <span class="c1"># Sort the final combined list by start position</span>
+        <span class="n">all_entities</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">all_entities</span></div>
+
+
+    <span class="c1"># def predict_thorough(self, text, labels=None, max_passes=2):</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     Performs a more exhaustive, multi-pass entity extraction by processing labels in smaller batches.</span>
+    <span class="c1">#     This can improve accuracy when many different label types are specified but is more computationally intensive.</span>
+
+    <span class="c1">#     Parameters:</span>
+    <span class="c1">#         text (str): The input text.</span>
+    <span class="c1">#         labels (list of str, optional): Entity labels to predict. Defaults to the class&#39;s default labels.</span>
+    <span class="c1">#         max_passes (int): The maximum number of passes to run for each chunk of labels.</span>
+                
+    <span class="c1">#     Returns:</span>
+    <span class="c1">#         list of dict: A list of all unique entities found across all passes and all label chunks.</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     if labels is not None:</span>
+    <span class="c1">#         predict_labels = [label.lower() for label in labels]</span>
+    <span class="c1">#     else:</span>
+    <span class="c1">#         predict_labels = self.labels</span>
+
+    <span class="c1">#     if not predict_labels:</span>
+    <span class="c1">#         return []</span>
+
+    <span class="c1">#     all_entities = []</span>
+    <span class="c1">#     processed_spans = set()</span>
+        
+    <span class="c1">#     mutable_text_list = list(text)</span>
+
+    <span class="c1">#     # Chunk the labels into groups of 3 for more focused prediction</span>
+    <span class="c1">#     label_chunk_size = 3</span>
+    <span class="c1">#     label_chunks = [predict_labels[i:i + label_chunk_size] for i in range(0, len(predict_labels), label_chunk_size)]</span>
+
+    <span class="c1">#     for chunk in label_chunks:</span>
+    <span class="c1">#         # For each chunk of labels, run the multi-pass prediction logic</span>
+    <span class="c1">#         for pass_num in range(max_passes):</span>
+    <span class="c1">#             current_text_to_process = &quot;&quot;.join(mutable_text_list)</span>
+                
+    <span class="c1">#             threshold = 0.5 if pass_num == 0 else 0.9</span>
+                
+    <span class="c1">#             newly_found_entities = self.model.predict_entities(current_text_to_process, chunk, threshold=threshold)</span>
+
+    <span class="c1">#             if not newly_found_entities:</span>
+    <span class="c1">#                 break</span>
+                
+    <span class="c1">#             unique_new_entities = []</span>
+    <span class="c1">#             for ent in newly_found_entities:</span>
+    <span class="c1">#                 span = (ent[&#39;start&#39;], ent[&#39;end&#39;])</span>
+    <span class="c1">#                 if span not in processed_spans:</span>
+    <span class="c1">#                     unique_new_entities.append(ent)</span>
+    <span class="c1">#                     processed_spans.add(span)</span>
+                
+    <span class="c1">#             if not unique_new_entities:</span>
+    <span class="c1">#                 break</span>
+
+    <span class="c1">#             all_entities.extend(unique_new_entities)</span>
+
+    <span class="c1">#             for entity in unique_new_entities:</span>
+    <span class="c1">#                 for i in range(entity[&#39;start&#39;], entity[&#39;end&#39;]):</span>
+    <span class="c1">#                     mutable_text_list[i] = &#39; &#39;</span>
+        
+    <span class="c1">#     all_entities.sort(key=lambda x: x[&#39;start&#39;])</span>
+    <span class="c1">#     return all_entities</span>
+<div class="viewcode-block" id="EntityExtractor.predict_thorough">
+<a class="viewcode-back" href="../../api.html#zink.extractor.EntityExtractor.predict_thorough">[docs]</a>
+    <span class="k">def</span> <span class="nf">predict_thorough</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Performs a highly detailed entity extraction using a hybrid approach. For each</span>
+<span class="sd">        chunk of labels, it runs a two-pass process with internal, temporary masking</span>
+<span class="sd">        to find a comprehensive set of entities. It then resolves overlaps between</span>
+<span class="sd">        all found entities across all chunks by keeping the label with the highest</span>
+<span class="sd">        confidence score for each unique text span.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            text (str): The input text.</span>
+<span class="sd">            labels (list of str, optional): Entity labels to predict.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list of dict: A list of the highest-confidence entities for each unique span.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">predict_labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">label</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">predict_labels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">predict_labels</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="c1"># Final dictionary to hold the best entity for each span across all chunks</span>
+        <span class="n">best_entities_by_span</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">label_chunk_size</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="n">label_chunks</span> <span class="o">=</span> <span class="p">[</span><span class="n">predict_labels</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="n">label_chunk_size</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">predict_labels</span><span class="p">),</span> <span class="n">label_chunk_size</span><span class="p">)]</span>
+
+        <span class="c1"># Process one chunk of labels at a time</span>
+        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">label_chunks</span><span class="p">:</span>
+            
+            <span class="c1"># --- Pass 1: Normal threshold on the original text ---</span>
+            <span class="n">pass1_entities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict_entities</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">chunk</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+            <span class="c1"># --- Temporary Masking for Pass 2 ---</span>
+            <span class="n">temp_mutable_text</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">entity</span> <span class="ow">in</span> <span class="n">pass1_entities</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">entity</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">],</span> <span class="n">entity</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]):</span>
+                    <span class="n">temp_mutable_text</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span>
+            <span class="n">masked_text_for_pass2</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">temp_mutable_text</span><span class="p">)</span>
+
+            <span class="c1"># --- Pass 2: High threshold on the temporarily masked text ---</span>
+            <span class="n">pass2_entities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict_entities</span><span class="p">(</span><span class="n">masked_text_for_pass2</span><span class="p">,</span> <span class="n">chunk</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+
+            <span class="c1"># Combine all entities found just for this chunk</span>
+            <span class="n">entities_from_this_chunk</span> <span class="o">=</span> <span class="n">pass1_entities</span> <span class="o">+</span> <span class="n">pass2_entities</span>
+
+            <span class="c1"># --- Conflict Resolution: Update the master dictionary ---</span>
+            <span class="k">for</span> <span class="n">entity</span> <span class="ow">in</span> <span class="n">entities_from_this_chunk</span><span class="p">:</span>
+                <span class="n">span</span> <span class="o">=</span> <span class="p">(</span><span class="n">entity</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">],</span> <span class="n">entity</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">])</span>
+                <span class="n">existing_entity</span> <span class="o">=</span> <span class="n">best_entities_by_span</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">span</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">existing_entity</span> <span class="ow">or</span> <span class="n">entity</span><span class="p">[</span><span class="s1">&#39;score&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">existing_entity</span><span class="p">[</span><span class="s1">&#39;score&#39;</span><span class="p">]:</span>
+                    <span class="n">best_entities_by_span</span><span class="p">[</span><span class="n">span</span><span class="p">]</span> <span class="o">=</span> <span class="n">entity</span>
+
+        <span class="c1"># Convert the dictionary of best entities back to a list and sort</span>
+        <span class="n">final_entities</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">best_entities_by_span</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">final_entities</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">])</span>
+        
+        <span class="k">return</span> <span class="n">final_entities</span></div>
+
+    
+<div class="viewcode-block" id="EntityExtractor.predict2">
+<a class="viewcode-back" href="../../api.html#zink.extractor.EntityExtractor.predict2">[docs]</a>
+    <span class="k">def</span> <span class="nf">predict2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Performs a highly detailed entity extraction using a MEMORY-EFFICIENT </span>
+<span class="sd">        THREAD-BASED parallel approach.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">predict_labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">label</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">predict_labels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">predict_labels</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        
+        <span class="c1"># Storing text on self to make it accessible to the thread worker method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thread_text</span> <span class="o">=</span> <span class="n">text</span>
+
+        <span class="n">label_chunk_size</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">label_chunks</span> <span class="o">=</span> <span class="p">[</span><span class="n">predict_labels</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="n">label_chunk_size</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">predict_labels</span><span class="p">),</span> <span class="n">label_chunk_size</span><span class="p">)]</span>
+
+        <span class="n">results_from_all_chunks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># Use a ThreadPoolExecutor, which shares memory.</span>
+        <span class="c1"># You can control the number of threads with max_workers.</span>
+        <span class="k">with</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+            <span class="c1"># The map function distributes the label chunks to threads in the pool.</span>
+            <span class="c1"># Each thread will call self._process_chunk_thread_safe.</span>
+            <span class="n">results_from_all_chunks</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">executor</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_process_chunk_thread_safe</span><span class="p">,</span> <span class="n">label_chunks</span><span class="p">))</span>
+
+        <span class="c1"># --- REDUCE PHASE (Unchanged) ---</span>
+        <span class="n">best_entities_by_span</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">all_found_entities</span> <span class="o">=</span> <span class="p">[</span><span class="n">entity</span> <span class="k">for</span> <span class="n">sublist</span> <span class="ow">in</span> <span class="n">results_from_all_chunks</span> <span class="k">for</span> <span class="n">entity</span> <span class="ow">in</span> <span class="n">sublist</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">entity</span> <span class="ow">in</span> <span class="n">all_found_entities</span><span class="p">:</span>
+            <span class="n">span</span> <span class="o">=</span> <span class="p">(</span><span class="n">entity</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">],</span> <span class="n">entity</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">])</span>
+            <span class="n">existing_entity</span> <span class="o">=</span> <span class="n">best_entities_by_span</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">span</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">existing_entity</span> <span class="ow">or</span> <span class="n">entity</span><span class="p">[</span><span class="s1">&#39;score&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">existing_entity</span><span class="p">[</span><span class="s1">&#39;score&#39;</span><span class="p">]:</span>
+                <span class="n">best_entities_by_span</span><span class="p">[</span><span class="n">span</span><span class="p">]</span> <span class="o">=</span> <span class="n">entity</span>
+
+        <span class="n">final_entities</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">best_entities_by_span</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">final_entities</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">])</span>
+        
+        <span class="c1"># Clean up the temporary attribute</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">thread_text</span>
+        
+        <span class="k">return</span> <span class="n">final_entities</span></div>
 </div>
 
+    
 
 
 <span class="n">_DEFAULT_EXTRACTOR</span> <span class="o">=</span> <span class="n">EntityExtractor</span><span class="p">()</span>

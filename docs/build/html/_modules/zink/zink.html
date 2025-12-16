@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>zink.zink &mdash; Zink 0.4.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
@@ -70,14 +70,17 @@
              
   <h1>Source code for zink.zink</h1><div class="highlight"><pre>
 <span></span><span class="c1"># zink.py</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pseudonymizer</span>
+<span class="kn">from</span> <span class="nn">.pipeline</span> <span class="kn">import</span> <span class="n">Pseudonymizer</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">zink.utils.paths</span> <span class="kn">import</span> <span class="n">get_default_mapping_path</span>
 
 <span class="c1"># Create a global instance to preserve cache across calls.</span>
 <span class="n">_global_instance</span> <span class="o">=</span> <span class="n">Pseudonymizer</span><span class="p">()</span>
 
 <div class="viewcode-block" id="redact">
 <a class="viewcode-back" href="../../api.html#zink.zink.redact">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">redact</span><span class="p">(</span>
+<span class="k">def</span> <span class="nf">redact</span><span class="p">(</span>
     <span class="n">text</span><span class="p">,</span>
     <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">placeholder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -89,7 +92,8 @@
     <span class="c1"># Below are concurrency-related or advanced parameters:</span>
     <span class="n">auto_parallel</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">chunk_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-    <span class="n">max_workers</span><span class="o">=</span><span class="mi">4</span>
+    <span class="n">max_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">numbered_entities</span><span class="o">=</span><span class="kc">False</span>  <span class="c1"># Default to False for compatibility</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Module-level convenience function that uses a global instance for caching.</span>
@@ -105,7 +109,8 @@
             <span class="n">use_cache</span><span class="o">=</span><span class="n">use_cache</span><span class="p">,</span>
             <span class="n">auto_parallel</span><span class="o">=</span><span class="n">auto_parallel</span><span class="p">,</span>
             <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
-            <span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span>
+            <span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">,</span>
+            <span class="n">numbered_entities</span><span class="o">=</span><span class="n">numbered_entities</span>
         <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># Create a fresh instance</span>
@@ -122,13 +127,14 @@
             <span class="n">use_cache</span><span class="o">=</span><span class="n">use_cache</span><span class="p">,</span>
             <span class="n">auto_parallel</span><span class="o">=</span><span class="n">auto_parallel</span><span class="p">,</span>
             <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
-            <span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span>
+            <span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">,</span>
+            <span class="n">numbered_entities</span><span class="o">=</span> <span class="n">numbered_entities</span>
         <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="replace">
 <a class="viewcode-back" href="../../api.html#zink.zink.replace">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">replace</span><span class="p">(</span>
+<span class="k">def</span> <span class="nf">replace</span><span class="p">(</span>
     <span class="n">text</span><span class="p">,</span>
     <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">user_replacements</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -177,7 +183,7 @@
 
 <div class="viewcode-block" id="replace_with_my_data">
 <a class="viewcode-back" href="../../api.html#zink.zink.replace_with_my_data">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">replace_with_my_data</span><span class="p">(</span>
+<span class="k">def</span> <span class="nf">replace_with_my_data</span><span class="p">(</span>
     <span class="n">text</span><span class="p">,</span>
     <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">user_replacements</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -222,6 +228,139 @@
             <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
             <span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span>
         <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="shield">
+<a class="viewcode-back" href="../../api.html#zink.zink.shield">[docs]</a>
+<span class="k">def</span> <span class="nf">shield</span><span class="p">(</span><span class="n">target_arg</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">zink_kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A decorator that provides a full anonymization/re-identification </span>
+<span class="sd">    &quot;shield&quot; for a function call.</span>
+
+<span class="sd">    It anonymizes a specific input argument, calls the decorated function,</span>
+<span class="sd">    and then automatically re-identifies the function&#39;s string output.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        target_arg (str or int): The name (str) or position (int) of the </span>
+<span class="sd">            input argument to anonymize.</span>
+<span class="sd">        labels (tuple or list): The entity labels to anonymize. Required.</span>
+<span class="sd">        **zink_kwargs: Additional keyword arguments for the underlying</span>
+<span class="sd">            zn.redact function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The &#39;labels&#39; argument is required for the shield decorator.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">decorator</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+        <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="c1"># 1. Find and extract the original text from the function&#39;s arguments</span>
+            <span class="n">original_text</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">is_kwarg</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_arg</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">target_arg</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                <span class="n">original_text</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">target_arg</span><span class="p">]</span>
+                <span class="n">is_kwarg</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_arg</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">target_arg</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+                <span class="n">original_text</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="n">target_arg</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Argument &#39;</span><span class="si">{</span><span class="n">target_arg</span><span class="si">}</span><span class="s2">&#39; not found in function call.&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">original_text</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Target argument &#39;</span><span class="si">{</span><span class="n">target_arg</span><span class="si">}</span><span class="s2">&#39; must be a string.&quot;</span><span class="p">)</span>
+
+            <span class="c1"># 2. Anonymize the input and build the re-identification map.</span>
+            <span class="c1">#    `numbered_entities` must be True for re-identification to work.</span>
+            <span class="n">result_obj</span> <span class="o">=</span> <span class="n">redact</span><span class="p">(</span>
+                <span class="n">original_text</span><span class="p">,</span>
+                <span class="n">categories</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+                <span class="n">numbered_entities</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">zink_kwargs</span>
+            <span class="p">)</span>
+            <span class="n">anonymized_text</span> <span class="o">=</span> <span class="n">result_obj</span><span class="o">.</span><span class="n">anonymized_text</span>
+            <span class="n">reid_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">item</span><span class="o">.</span><span class="n">pseudonym</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">original</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">result_obj</span><span class="o">.</span><span class="n">replacements</span><span class="p">}</span>
+
+            <span class="c1"># 3. Create new arguments for the wrapped function, with the text anonymized</span>
+            <span class="k">if</span> <span class="n">is_kwarg</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="n">target_arg</span><span class="p">]</span> <span class="o">=</span> <span class="n">anonymized_text</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">args</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+                <span class="n">args</span><span class="p">[</span><span class="n">target_arg</span><span class="p">]</span> <span class="o">=</span> <span class="n">anonymized_text</span>
+                <span class="n">args</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+            <span class="c1"># 4. Call the wrapped function (e.g., the LLM) with the safe, anonymized data</span>
+            <span class="n">anonymized_response</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+            <span class="c1"># 5. Re-identify the placeholders in the function&#39;s output string</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">anonymized_response</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">anonymized_response</span> <span class="c1"># Return non-strings as-is</span>
+
+            <span class="n">reidentified_response</span> <span class="o">=</span> <span class="n">anonymized_response</span>
+            <span class="k">for</span> <span class="n">pseudonym</span><span class="p">,</span> <span class="n">original</span> <span class="ow">in</span> <span class="n">reid_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">reidentified_response</span> <span class="o">=</span> <span class="n">reidentified_response</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">pseudonym</span><span class="p">,</span> <span class="n">original</span><span class="p">)</span>
+
+            <span class="c1"># 6. Return the final, re-identified result</span>
+            <span class="k">return</span> <span class="n">reidentified_response</span>
+        <span class="k">return</span> <span class="n">wrapper</span>
+    <span class="k">return</span> <span class="n">decorator</span></div>
+
+
+<div class="viewcode-block" id="where_mapping_file">
+<a class="viewcode-back" href="../../api.html#zink.zink.where_mapping_file">[docs]</a>
+<span class="k">def</span> <span class="nf">where_mapping_file</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the path to the persistent mapping file.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">get_default_mapping_path</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="refresh_mapping_file">
+<a class="viewcode-back" href="../../api.html#zink.zink.refresh_mapping_file">[docs]</a>
+<span class="k">def</span> <span class="nf">refresh_mapping_file</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes the persistent mapping file if it exists.&quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">get_default_mapping_path</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="prep">
+<a class="viewcode-back" href="../../api.html#zink.zink.prep">[docs]</a>
+<span class="k">def</span> <span class="nf">prep</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Prepares text for redaction by wrapping specified words in asterisks.</span>
+<span class="sd">    These words will be excluded from redaction.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">words</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">text</span>
+    
+    <span class="c1"># Simple replacement for now. </span>
+    <span class="c1"># Note: This might replace substrings (e.g. &quot;car&quot; in &quot;racecar&quot;). </span>
+    <span class="c1"># If exact word matching is needed, we&#39;d need regex with \b.</span>
+    <span class="c1"># The user example implies simple replacement or word-based. </span>
+    <span class="c1"># Given &quot;toyota&quot; -&gt; &quot;*toyota*&quot;, simple replace is likely what&#39;s expected for a basic version.</span>
+    <span class="c1"># But let&#39;s try to be slightly smarter and use regex word boundaries if possible?</span>
+    <span class="c1"># The user prompt said: &quot;the prep function will insert *s to whatever words are provided in the argument list.&quot;</span>
+    <span class="c1"># Let&#39;s stick to simple replace for now as it&#39;s most predictable, or maybe regex.</span>
+    <span class="c1"># Let&#39;s use regex to avoid partial matches if possible, but user might want partials?</span>
+    <span class="c1"># &quot;rav4&quot; -&gt; &quot;*rav4*&quot;</span>
+    <span class="c1"># Let&#39;s use simple replace as a start, it&#39;s safer than regex escaping issues unless we are careful.</span>
+    <span class="c1"># Actually, simple replace is risky for &quot;cat&quot; in &quot;category&quot;.</span>
+    <span class="c1"># Let&#39;s use regex with word boundaries for safety.</span>
+    
+    <span class="kn">import</span> <span class="nn">re</span>
+    
+    <span class="c1"># Sort words by length descending to handle overlapping terms (longest match first)</span>
+    <span class="c1"># though with word boundaries it matters less, but still good practice.</span>
+    <span class="n">sorted_words</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">words</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">sorted_words</span><span class="p">:</span>
+        <span class="c1"># Escape the word to handle special regex chars</span>
+        <span class="n">escaped_word</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+        <span class="c1"># Use word boundaries. </span>
+        <span class="c1"># Note: \b might not work well if &#39;word&#39; starts/ends with non-word chars.</span>
+        <span class="c1"># But for typical entities (names, things), it&#39;s fine.</span>
+        <span class="c1"># If the word itself contains punctuation, \b might be tricky.</span>
+        <span class="c1"># Let&#39;s assume standard entities.</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;\b&#39;</span> <span class="o">+</span> <span class="n">escaped_word</span> <span class="o">+</span> <span class="sa">r</span><span class="s1">&#39;\b&#39;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;*</span><span class="si">{</span><span class="n">word</span><span class="si">}</span><span class="s2">*&quot;</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+        
+    <span class="k">return</span> <span class="n">text</span></div>
 
 </pre></div>
 

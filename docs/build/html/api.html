@@ -7,7 +7,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>API Reference &mdash; Zink 0.4.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
@@ -45,14 +45,20 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-zink.zink">Main Module (<cite>zink.zink</cite>)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#zink.zink.prep"><code class="docutils literal notranslate"><span class="pre">prep()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#zink.zink.redact"><code class="docutils literal notranslate"><span class="pre">redact()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#zink.zink.refresh_mapping_file"><code class="docutils literal notranslate"><span class="pre">refresh_mapping_file()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#zink.zink.replace"><code class="docutils literal notranslate"><span class="pre">replace()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#zink.zink.replace_with_my_data"><code class="docutils literal notranslate"><span class="pre">replace_with_my_data()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#zink.zink.shield"><code class="docutils literal notranslate"><span class="pre">shield()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#zink.zink.where_mapping_file"><code class="docutils literal notranslate"><span class="pre">where_mapping_file()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-zink.extractor">Extractor Module (<cite>zink.extractor</cite>)</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#zink.extractor.EntityExtractor"><code class="docutils literal notranslate"><span class="pre">EntityExtractor</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#zink.extractor.EntityExtractor.predict"><code class="docutils literal notranslate"><span class="pre">EntityExtractor.predict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#zink.extractor.EntityExtractor.predict2"><code class="docutils literal notranslate"><span class="pre">EntityExtractor.predict2()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#zink.extractor.EntityExtractor.predict_thorough"><code class="docutils literal notranslate"><span class="pre">EntityExtractor.predict_thorough()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -125,11 +131,24 @@
 <section id="module-zink.zink">
 <span id="main-module-zink-zink"></span><h2>Main Module (<cite>zink.zink</cite>)<a class="headerlink" href="#module-zink.zink" title="Link to this heading"></a></h2>
 <dl class="py function">
+<dt class="sig sig-object py" id="zink.zink.prep">
+<span class="sig-prename descclassname"><span class="pre">zink.zink.</span></span><span class="sig-name descname"><span class="pre">prep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">words</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/zink.html#prep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.zink.prep" title="Link to this definition"></a></dt>
+<dd><p>Prepares text for redaction by wrapping specified words in asterisks.
+These words will be excluded from redaction.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="zink.zink.redact">
-<span class="sig-prename descclassname"><span class="pre">zink.zink.</span></span><span class="sig-name descname"><span class="pre">redact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">placeholder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_json_mapping</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extractor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replacer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_parallel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/zink.html#redact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.zink.redact" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">zink.zink.</span></span><span class="sig-name descname"><span class="pre">redact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">placeholder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_json_mapping</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extractor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replacer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_parallel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">numbered_entities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/zink.html#redact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.zink.redact" title="Link to this definition"></a></dt>
 <dd><p>Module-level convenience function that uses a global instance for caching.
 If 'auto_parallel' is True and len(text) &gt; chunk_size, concurrency-based pipeline is used.
 Otherwise single-pass logic is used.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zink.zink.refresh_mapping_file">
+<span class="sig-prename descclassname"><span class="pre">zink.zink.</span></span><span class="sig-name descname"><span class="pre">refresh_mapping_file</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/zink.html#refresh_mapping_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.zink.refresh_mapping_file" title="Link to this definition"></a></dt>
+<dd><p>Deletes the persistent mapping file if it exists.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -146,27 +165,84 @@ Typically 'replace_with_my_data' does NOT rely on caching,
 but we might still want concurrency for large texts if 'auto_parallel' is True.</p>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="zink.zink.shield">
+<span class="sig-prename descclassname"><span class="pre">zink.zink.</span></span><span class="sig-name descname"><span class="pre">shield</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_arg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">zink_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/zink.html#shield"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.zink.shield" title="Link to this definition"></a></dt>
+<dd><p>A decorator that provides a full anonymization/re-identification
+&quot;shield&quot; for a function call.</p>
+<p>It anonymizes a specific input argument, calls the decorated function,
+and then automatically re-identifies the function's string output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_arg</strong> (<em>str</em><em> or </em><em>int</em>) -- The name (str) or position (int) of the
+input argument to anonymize.</p></li>
+<li><p><strong>labels</strong> (<em>tuple</em><em> or </em><em>list</em>) -- The entity labels to anonymize. Required.</p></li>
+<li><p><strong>**zink_kwargs</strong> -- Additional keyword arguments for the underlying
+zn.redact function.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zink.zink.where_mapping_file">
+<span class="sig-prename descclassname"><span class="pre">zink.zink.</span></span><span class="sig-name descname"><span class="pre">where_mapping_file</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/zink.html#where_mapping_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.zink.where_mapping_file" title="Link to this definition"></a></dt>
+<dd><p>Returns the path to the persistent mapping file.</p>
+</dd></dl>
+
 </section>
 <section id="module-zink.extractor">
 <span id="extractor-module-zink-extractor"></span><h2>Extractor Module (<cite>zink.extractor</cite>)<a class="headerlink" href="#module-zink.extractor" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="zink.extractor.EntityExtractor">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zink.extractor.</span></span><span class="sig-name descname"><span class="pre">EntityExtractor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'deepanwa/NuNerZero_onnx'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/extractor.html#EntityExtractor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.extractor.EntityExtractor" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zink.extractor.</span></span><span class="sig-name descname"><span class="pre">EntityExtractor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'deepanwa/NuNerZero_onnx'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/extractor.html#EntityExtractor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.extractor.EntityExtractor" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="zink.extractor.EntityExtractor.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/extractor.html#EntityExtractor.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.extractor.EntityExtractor.predict" title="Link to this definition"></a></dt>
-<dd><p>Predict entities in the given text.</p>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_passes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/extractor.html#EntityExtractor.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.extractor.EntityExtractor.predict" title="Link to this definition"></a></dt>
+<dd><p>Iteratively finds entities by masking found entities and re-running the model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>text</strong> (<em>str</em>) -- The input text.</p></li>
-<li><p><strong>labels</strong> (<em>list</em><em> of </em><em>str</em><em>,</em>) -- Only entities with these labels will be returned.
-If None, all detected entities are returned.</p></li>
+<li><p><strong>labels</strong> (<em>list</em><em> of </em><em>str</em><em>, </em><em>optional</em>) -- Entity labels to predict. Defaults to None.</p></li>
+<li><p><strong>max_passes</strong> (<em>int</em>) -- A safeguard to prevent potential infinite loops.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A list of dictionaries, each containing 'start', 'end', 'label', and 'text'.</p>
+<dd class="field-even"><p>A list of all unique entities found across all passes.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zink.extractor.EntityExtractor.predict2">
+<span class="sig-name descname"><span class="pre">predict2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/extractor.html#EntityExtractor.predict2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.extractor.EntityExtractor.predict2" title="Link to this definition"></a></dt>
+<dd><p>Performs a highly detailed entity extraction using a MEMORY-EFFICIENT
+THREAD-BASED parallel approach.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zink.extractor.EntityExtractor.predict_thorough">
+<span class="sig-name descname"><span class="pre">predict_thorough</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/extractor.html#EntityExtractor.predict_thorough"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.extractor.EntityExtractor.predict_thorough" title="Link to this definition"></a></dt>
+<dd><p>Performs a highly detailed entity extraction using a hybrid approach. For each
+chunk of labels, it runs a two-pass process with internal, temporary masking
+to find a comprehensive set of entities. It then resolves overlaps between
+all found entities across all chunks by keeping the label with the highest
+confidence score for each unique text span.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) -- The input text.</p></li>
+<li><p><strong>labels</strong> (<em>list</em><em> of </em><em>str</em><em>, </em><em>optional</em>) -- Entity labels to predict.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of the highest-confidence entities for each unique span.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>list of dict</p>
@@ -181,7 +257,7 @@ If None, all detected entities are returned.</p></li>
 <span id="merger-module-zink-merger"></span><h2>Merger Module (<cite>zink.merger</cite>)<a class="headerlink" href="#module-zink.merger" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="zink.merger.EntityMerger">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zink.merger.</span></span><span class="sig-name descname"><span class="pre">EntityMerger</span></span><a class="reference internal" href="_modules/zink/merger.html#EntityMerger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.merger.EntityMerger" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zink.merger.</span></span><span class="sig-name descname"><span class="pre">EntityMerger</span></span><a class="reference internal" href="_modules/zink/merger.html#EntityMerger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.merger.EntityMerger" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Merges entities based on their labels and positions in the text.
 This class is designed to handle entities that are close together or have the same label,
@@ -198,7 +274,7 @@ merging them into a single entity when appropriate.</p>
 <span id="result-module-zink-result"></span><h2>Result Module (<cite>zink.result</cite>)<a class="headerlink" href="#module-zink.result" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="zink.result.PseudonymizationResult">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zink.result.</span></span><span class="sig-name descname"><span class="pre">PseudonymizationResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">original_text:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anonymized_text:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replacements:</span> <span class="pre">~typing.List[~zink.result.ReplacementDetail]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features:</span> <span class="pre">~typing.Dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/result.html#PseudonymizationResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.result.PseudonymizationResult" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zink.result.</span></span><span class="sig-name descname"><span class="pre">PseudonymizationResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">original_text:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anonymized_text:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replacements:</span> <span class="pre">~typing.List[~zink.result.ReplacementDetail]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features:</span> <span class="pre">~typing.Dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/result.html#PseudonymizationResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.result.PseudonymizationResult" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Result of the pseudonymization process.</p>
 <dl class="py attribute">
@@ -225,7 +301,7 @@ merging them into a single entity when appropriate.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="zink.result.ReplacementDetail">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zink.result.</span></span><span class="sig-name descname"><span class="pre">ReplacementDetail</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pseudonym</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/result.html#ReplacementDetail"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.result.ReplacementDetail" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zink.result.</span></span><span class="sig-name descname"><span class="pre">ReplacementDetail</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pseudonym</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/result.html#ReplacementDetail"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.result.ReplacementDetail" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Details about the replacement of a sensitive entity.</p>
 <dl class="py attribute">
@@ -265,7 +341,7 @@ merging them into a single entity when appropriate.</p>
 <span id="replacer-subpackage-zink-replacer"></span><h2>Replacer Subpackage (<cite>zink.replacer</cite>)<a class="headerlink" href="#module-zink.replacer" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="zink.replacer.EntityReplacer">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zink.replacer.</span></span><span class="sig-name descname"><span class="pre">EntityReplacer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_json_mapping</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/replacer/replacer.html#EntityReplacer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.replacer.EntityReplacer" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">zink.replacer.</span></span><span class="sig-name descname"><span class="pre">EntityReplacer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_json_mapping</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/replacer/replacer.html#EntityReplacer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.replacer.EntityReplacer" title="Link to this definition"></a></dt>
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="zink.replacer.EntityReplacer.replace_entities">
 <span class="sig-name descname"><span class="pre">replace_entities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entities</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_replacements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/zink/replacer/replacer.html#EntityReplacer.replace_entities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zink.replacer.EntityReplacer.replace_entities" title="Link to this definition"></a></dt>

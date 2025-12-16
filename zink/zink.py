@@ -229,3 +229,44 @@ def refresh_mapping_file():
     path = get_default_mapping_path()
     if os.path.exists(path):
         os.remove(path)
+
+def prep(text, words):
+    """
+    Prepares text for redaction by wrapping specified words in asterisks.
+    These words will be excluded from redaction.
+    """
+    if not words:
+        return text
+    
+    # Simple replacement for now. 
+    # Note: This might replace substrings (e.g. "car" in "racecar"). 
+    # If exact word matching is needed, we'd need regex with \b.
+    # The user example implies simple replacement or word-based. 
+    # Given "toyota" -> "*toyota*", simple replace is likely what's expected for a basic version.
+    # But let's try to be slightly smarter and use regex word boundaries if possible?
+    # The user prompt said: "the prep function will insert *s to whatever words are provided in the argument list."
+    # Let's stick to simple replace for now as it's most predictable, or maybe regex.
+    # Let's use regex to avoid partial matches if possible, but user might want partials?
+    # "rav4" -> "*rav4*"
+    # Let's use simple replace as a start, it's safer than regex escaping issues unless we are careful.
+    # Actually, simple replace is risky for "cat" in "category".
+    # Let's use regex with word boundaries for safety.
+    
+    import re
+    
+    # Sort words by length descending to handle overlapping terms (longest match first)
+    # though with word boundaries it matters less, but still good practice.
+    sorted_words = sorted(words, key=len, reverse=True)
+    
+    for word in sorted_words:
+        # Escape the word to handle special regex chars
+        escaped_word = re.escape(word)
+        # Use word boundaries. 
+        # Note: \b might not work well if 'word' starts/ends with non-word chars.
+        # But for typical entities (names, things), it's fine.
+        # If the word itself contains punctuation, \b might be tricky.
+        # Let's assume standard entities.
+        pattern = r'\b' + escaped_word + r'\b'
+        text = re.sub(pattern, f"*{word}*", text, flags=re.IGNORECASE)
+        
+    return text
