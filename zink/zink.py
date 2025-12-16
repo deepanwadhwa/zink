@@ -1,6 +1,9 @@
 # zink.py
 from .pipeline import Pseudonymizer
 import functools
+import os
+from zink.utils.paths import get_default_mapping_path
+
 # Create a global instance to preserve cache across calls.
 _global_instance = Pseudonymizer()
 
@@ -17,8 +20,7 @@ def redact(
     auto_parallel=False,
     chunk_size=1000,
     max_workers=4,
-    numbered_entities=False,  # Default to False for compatibility
-    mapping_file=None
+    numbered_entities=False  # Default to False for compatibility
 ):
     """
     Module-level convenience function that uses a global instance for caching.
@@ -35,8 +37,7 @@ def redact(
             auto_parallel=auto_parallel,
             chunk_size=chunk_size,
             max_workers=max_workers,
-            numbered_entities=numbered_entities,
-            mapping_file=mapping_file
+            numbered_entities=numbered_entities
         )
     else:
         # Create a fresh instance
@@ -54,8 +55,7 @@ def redact(
             auto_parallel=auto_parallel,
             chunk_size=chunk_size,
             max_workers=max_workers,
-            numbered_entities= numbered_entities,
-            mapping_file=mapping_file
+            numbered_entities= numbered_entities
         )
 
 def replace(
@@ -219,3 +219,13 @@ def shield(target_arg, labels=None, **zink_kwargs):
             return reidentified_response
         return wrapper
     return decorator
+
+def where_mapping_file():
+    """Returns the path to the persistent mapping file."""
+    return get_default_mapping_path()
+
+def refresh_mapping_file():
+    """Deletes the persistent mapping file if it exists."""
+    path = get_default_mapping_path()
+    if os.path.exists(path):
+        os.remove(path)

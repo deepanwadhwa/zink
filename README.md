@@ -120,22 +120,28 @@ Analysis for John Doe from Acme Inc. is complete.
 ```
 
 ### 4. Persistent Entity Mapping
-To ensure consistent redaction across multiple sessions or calls, you can use a persistent mapping file. This is particularly useful for maintaining context in long-running conversations.
+To ensure consistent redaction across multiple sessions or calls, you can use the `numbered_entities=True` flag. This will automatically use a persistent mapping file stored in your home directory (`~/.zink/mapping.json`).
 
 ```python
 import zink as zn
 
-# First call: Generates IDs and saves them to 'mapping.json'
+# First call: Generates IDs and saves them to default mapping file
 text1 = "My name is Alice."
-result1 = zn.redact(text1, labels=["person"], numbered_entities=True, mapping_file="mapping.json")
+result1 = zn.redact(text1, labels=["person"], numbered_entities=True)
 print(result1.anonymized_text) 
 # Output: person_1234_REDACTED ...
 
-# Second call: Reuses the SAME ID for 'Alice' from 'mapping.json'
+# Second call: Reuses the SAME ID for 'Alice'
 text2 = "Alice is here again."
-result2 = zn.redact(text2, labels=["person"], numbered_entities=True, mapping_file="mapping.json")
+result2 = zn.redact(text2, labels=["person"], numbered_entities=True)
 print(result2.anonymized_text)
 # Output: person_1234_REDACTED ...
+
+# Check where the mapping file is stored
+print(zn.where_mapping_file())
+
+# Clear the mapping file to start fresh
+zn.refresh_mapping_file()
 ```
 
 ## Docker Support

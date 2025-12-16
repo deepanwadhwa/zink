@@ -10,6 +10,7 @@ from zink.extractor import _DEFAULT_EXTRACTOR
 from zink.merger import EntityMerger
 from zink.replacer import EntityReplacer
 from zink.result import PseudonymizationResult, ReplacementDetail
+from zink.utils.paths import get_default_mapping_path
 from .passage_processors import extract_entities_in_parallel
 
 class Pseudonymizer:
@@ -98,7 +99,7 @@ class Pseudonymizer:
     #     )
 
     def redact(self, text, categories=None, placeholder=None, use_cache=True, 
-               auto_parallel=False, chunk_size=1000, max_workers=4, numbered_entities=False, mapping_file=None):
+               auto_parallel=False, chunk_size=1000, max_workers=4, numbered_entities=False):
         
         if len(text) > chunk_size and auto_parallel:
             merged = self._parallel_extraction(text, chunk_size, max_workers, categories)
@@ -109,7 +110,7 @@ class Pseudonymizer:
             else:
                 merged = self._single_pass_extraction(text, categories)
         
-        anonymized_text, detailed_replacements = self._do_redact(text, merged, placeholder, numbered_entities, mapping_file=mapping_file)
+        anonymized_text, detailed_replacements = self._do_redact(text, merged, placeholder, numbered_entities)
 
         return PseudonymizationResult(
             original_text=text,
@@ -119,7 +120,7 @@ class Pseudonymizer:
 
         )
 
-    def _do_redact(self, text, merged_entities, placeholder, numbered_entities=False, mapping_file=None):
+    def _do_redact(self, text, merged_entities, placeholder, numbered_entities=False):
         """Replaces entities with placeholders, ensuring consistency for numbered redaction."""
         result_text = text
         replacements_to_apply = []
@@ -131,8 +132,9 @@ class Pseudonymizer:
             # Track used IDs per label to avoid collisions
             used_ids_per_label = defaultdict(set)
 
-            # Load existing mapping if provided
-            if mapping_file and os.path.exists(mapping_file):
+            # Load existing mapping from default path
+            mapping_file = get_default_mapping_path()
+            if os.path.exists(mapping_file):
                 try:
                     with open(mapping_file, 'r') as f:
                         loaded_mapping = json.load(f)
@@ -172,20 +174,19 @@ class Pseudonymizer:
                     start=e['start'], end=e['end'], score=e.get('score', 1.0)
                 ))
             
-            # Save updated mapping if provided
-            if mapping_file:
-                try:
-                    # Convert back to serializable format: {"label": {"original_text": "id"}}
-                    serializable_mapping = defaultdict(dict)
-                    # We need to merge with what we loaded if we want to be safe, 
-                    # but entity_to_id_map should contain everything we loaded + new stuff
-                    for (label, original_text), ent_id in entity_to_id_map.items():
-                        serializable_mapping[label][original_text] = ent_id
-                    
-                    with open(mapping_file, 'w') as f:
-                        json.dump(serializable_mapping, f, indent=2)
-                except Exception as e:
-                    print(f"Warning: Failed to save mapping file {mapping_file}: {e}")
+            # Save updated mapping
+            try:
+                # Convert back to serializable format: {"label": {"original_text": "id"}}
+                serializable_mapping = defaultdict(dict)
+                # We need to merge with what we loaded if we want to be safe, 
+                # but entity_to_id_map should contain everything we loaded + new stuff
+                for (label, original_text), ent_id in entity_to_id_map.items():
+                    serializable_mapping[label][original_text] = ent_id
+                
+                with open(mapping_file, 'w') as f:
+                    json.dump(serializable_mapping, f, indent=2)
+            except Exception as e:
+                print(f"Warning: Failed to save mapping file {mapping_file}: {e}")
 
         else:
             # Standard (non-numbered) redaction

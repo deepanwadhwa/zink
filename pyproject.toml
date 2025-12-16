@@ -1,6 +1,6 @@
 [project]
 name = "zink"
-version = "0.6.4"
+version = "0.6.5"
 description = "Zink lets you safeguard privacy by detecting sensitive information and replacing it with secure, customizable placeholders."
 authors = [
     { name = "Deepan Wadhwa"}
