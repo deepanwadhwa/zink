@@ -9,3 +9,6 @@ __pycache__/
 
 #Ignore ruff cache
 *.ruff_cache
+
+# Generated Sphinx output
+docs/build/

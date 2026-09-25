@@ -3,10 +3,27 @@
 [![Run Python Tests](https://github.com/deepanwadhwa/zink/actions/workflows/python-tests.yaml/badge.svg)](https://github.com/deepanwadhwa/zink/actions/workflows/python-tests.yaml)
 [![PyPI Downloads](https://static.pepy.tech/badge/zink)](https://pepy.tech/projects/zink)
 
+[Documentation](https://zink.readthedocs.io/en/latest/) · [Tutorial](https://zink.readthedocs.io/en/latest/tutorial.html) · [API reference](https://zink.readthedocs.io/en/latest/api.html) · [Contributing](CONTRIBUTING.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
+
 <div align="center">
   <h1>ZINK (Zero-shot Ink)</h1>
 </div>
 ZINK is a Python package designed for zero-shot anonymization of entities within unstructured text data. It allows you to redact or replace sensitive information based on specified entity labels.
+
+Zink predicts entity spans using a GLiNER based model. Predictions can miss sensitive text, so review results before releasing research data. Numbered redaction keeps original values in a local mapping file and is pseudonymization rather than irreversible anonymization.
+
+## How Zink fits among related tools
+
+Zink combines user supplied entity labels with redaction, synthetic replacement, and persistent placeholder mapping in one Python API. It uses GLiNER for extraction rather than introducing a new recognition model.
+
+| Tool | Main focus | Difference for a researcher |
+| --- | --- | --- |
+| [PyRedactKit](https://github.com/brootware/PyRedactKit) | CLI redaction for built-in patterns and custom regular expressions | Zink can request semantic entity types at inference time; PyRedactKit is useful for known patterns in files. |
+| [Microsoft Presidio](https://microsoft.github.io/presidio/) | Extensible PII detection and anonymization framework | Presidio has a broader set of recognizers and operators, including ML integrations. Zink provides a compact workflow around a default zero-shot model. |
+| [scrubadub](https://scrubadub.readthedocs.io/en/stable/) | Text cleaning using configurable detectors | Zink exposes arbitrary label prompts to its entity model in the redaction call. |
+| [GLiNER](https://github.com/urchade/GLiNER) | Zero-shot entity extraction | Zink builds on GLiNER and adds redaction, replacements, and mapping. |
+
+See the [full comparison](https://zink.readthedocs.io/en/latest/related-tools.html). These are workflow differences; no head-to-head performance claim is made.
 
 ### Abstract
 
@@ -228,6 +245,8 @@ Zink leverages both the Faker library and the extensive training data from the G
 
 Here is a comparison of ZINK against other models on Quasi Identifier Benchmark ([QIB])(https://huggingface.co/datasets/deepanwa/QIB)
 
+These are the project's reported QIB results, not a head-to-head comparison with the redaction packages above. Evaluation scripts and a reproducible protocol are not included in this repository; verify the numbers and conditions before using them as evidence in a submission.
+
 | Model                  | Overall Recall | Overall Precision | Overall F4_SCORE | True Positives (TP) | False Negatives (FN) | Total Redaction Markers |
 | :--------------------- | :------------- | :---------------- | :--------------- | :------------------ | :------------------- | :---------------------- |
 | **gpt_41_nano** | 0.8971         | 0.962             | 0.9007           | 1570                | 180                  | 1632                    |
@@ -240,6 +259,15 @@ Here is a comparison of ZINK against other models on Quasi Identifier Benchmark 
 | **bert** | 0.628          | 0.4255            | 0.6109           | 1099                | 651                  | 2583                    |
 
 ## Development
+
+To install the development version from a clone of this repository (Python 3.11+):
+
+```bash
+python -m pip install -e '.[cpu]'
+python -m pip install pytest sphinx sphinx-rtd-theme
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for a virtual environment setup and documentation checks.
 
 ### Testing
 To run the tests, navigate to the project directory and execute:
