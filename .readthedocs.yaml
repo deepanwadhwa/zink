@@ -7,7 +7,7 @@ build:
     python: "3.11"
   jobs:
     post_install:
-      - python -m pip install -e . 'sphinx>=8.2,<9' 'sphinx-rtd-theme>=3,<4'
+      - python -m pip install -e . sphinx==8.2.3 sphinx-rtd-theme==3.0.2
 sphinx:
   configuration: docs/source/conf.py
   fail_on_warning: true
