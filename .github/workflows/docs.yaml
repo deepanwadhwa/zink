@@ -1,0 +1,20 @@
+name: Build documentation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  sphinx:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install package and documentation tools
+        run: python -m pip install -e . 'sphinx>=8.2,<9' 'sphinx-rtd-theme>=3,<4'
+      - name: Build documentation with warnings as errors
+        run: sphinx-build -b html -W --keep-going docs/source docs/build/html

@@ -7,8 +7,7 @@ build:
     python: "3.11"
   jobs:
     post_install:
-      - pip install uv
-      - UV_PROJECT_ENVIRONMENT=$READTHEDOCS_VIRTUALENV_PATH uv sync --all-extras --group docs --link-mode=copy #https://github.com/astral-sh/uv/issues/10074
+      - python -m pip install -e . 'sphinx>=8.2,<9' 'sphinx-rtd-theme>=3,<4'
 sphinx:
   configuration: docs/source/conf.py
   fail_on_warning: true

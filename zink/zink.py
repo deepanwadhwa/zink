@@ -22,10 +22,32 @@ def redact(
     max_workers=4,
     numbered_entities=False  # Default to False for compatibility
 ):
-    """
-    Module-level convenience function that uses a global instance for caching.
-    If 'auto_parallel' is True and len(text) > chunk_size, concurrency-based pipeline is used.
-    Otherwise single-pass logic is used.
+    """Detect and redact entities in text.
+
+    Args:
+        text (str): Input text. ``*protected text*`` is excluded from redaction;
+            the asterisks are removed from the result.
+        categories (sequence of str, optional): Entity labels. Defaults to
+            ``person``, ``date`` and ``location`` in the extractor.
+        placeholder (str, optional): One replacement for every detected span.
+            Defaults to ``<label>_REDACTED``.
+        use_cache (bool): Reuse extraction results for identical text and labels.
+        use_json_mapping (bool): Select the default JSON-backed replacer when
+            constructing the pipeline. Has no effect on redaction output.
+        extractor: Reserved for a custom extractor. Custom pipeline injection is
+            not currently supported by the default ``Pseudonymizer``.
+        merger: Reserved for a custom merger; see ``extractor``.
+        replacer: Reserved for a custom replacer; see ``extractor``.
+        auto_parallel (bool): Extract long text in chunks when it exceeds
+            ``chunk_size``. Defaults to false.
+        chunk_size (int): Chunk threshold in characters.
+        max_workers (int): Maximum worker threads for parallel extraction.
+        numbered_entities (bool): Use stable numbered placeholders persisted in
+            ``~/.zink/mapping.json``. This file contains original sensitive text.
+
+    Returns:
+        zink.result.PseudonymizationResult: Redacted text, detected spans and
+        the number of replacements.
     """
     if extractor is None and merger is None and replacer is None and use_json_mapping:
         # Use global instance + built-in concurrency if desired
@@ -72,8 +94,27 @@ def replace(
     chunk_size=1000,
     max_workers=4
 ):
-    """
-    Module-level convenience function that uses a global instance for caching.
+    """Replace detected entities with synthetic or user supplied values.
+
+    Args:
+        text (str): Input text.
+        categories (sequence of str, optional): Entity labels to detect.
+        user_replacements (dict, optional): Mapping from label to a fixed string
+            or list of candidate strings. Keys are case insensitive.
+        ensure_consistency (bool): Reuse one replacement for repeated source
+            strings in this call. Defaults to true.
+        use_cache (bool): Reuse extraction for identical text and labels.
+        use_json_mapping (bool): Use bundled replacement values as a fallback.
+        extractor: Reserved for custom pipeline injection; currently unsupported.
+        merger: Reserved for custom pipeline injection; currently unsupported.
+        replacer: Reserved for custom pipeline injection; currently unsupported.
+        auto_parallel (bool): Request chunked extraction for long text. Text
+            longer than ``chunk_size`` is chunked regardless of this setting.
+        chunk_size (int): Chunk threshold in characters.
+        max_workers (int): Maximum worker threads for parallel extraction.
+
+    Returns:
+        zink.result.PseudonymizationResult: Result with transformed text.
     """
     if extractor is None and merger is None and replacer is None and use_json_mapping:
         return _global_instance.replace(
@@ -118,10 +159,28 @@ def replace_with_my_data(
     chunk_size=1000,
     max_workers=4
 ):
-    """
-    Module-level convenience function. 
-    Typically 'replace_with_my_data' does NOT rely on caching,
-    but we might still want concurrency for large texts if 'auto_parallel' is True.
+    """Replace detected entities using a required custom label mapping.
+
+    Args:
+        text (str): Input text.
+        categories (sequence of str, optional): Entity labels to detect.
+        user_replacements (dict): Nonempty mapping from label to a fixed string
+            or list of candidate strings. Unmapped labels use normal fallback.
+        ensure_consistency (bool): Reuse one replacement for repeated source
+            strings in this call.
+        use_json_mapping (bool): Use bundled values for unmapped labels.
+        extractor: Reserved for custom pipeline injection; currently unsupported.
+        merger: Reserved for custom pipeline injection; currently unsupported.
+        replacer: Reserved for custom pipeline injection; currently unsupported.
+        auto_parallel (bool): Request chunked extraction for long text.
+        chunk_size (int): Chunk threshold in characters. Longer text is chunked.
+        max_workers (int): Maximum worker threads for parallel extraction.
+
+    Returns:
+        zink.result.PseudonymizationResult: Result with transformed text.
+
+    Raises:
+        ValueError: If ``user_replacements`` is empty or omitted.
     """
     if extractor is None and merger is None and replacer is None and use_json_mapping:
         return _global_instance.replace_with_my_data(
@@ -151,19 +210,24 @@ def replace_with_my_data(
         )
 
 def shield(target_arg, labels=None, **zink_kwargs):
-    """
-    A decorator that provides a full anonymization/re-identification 
-    "shield" for a function call.
-
-    It anonymizes a specific input argument, calls the decorated function,
-    and then automatically re-identifies the function's string output.
+    """Decorate a function to redact one argument and restore its string output.
 
     Args:
-        target_arg (str or int): The name (str) or position (int) of the 
-            input argument to anonymize.
-        labels (tuple or list): The entity labels to anonymize. Required.
-        **zink_kwargs: Additional keyword arguments for the underlying
-            zn.redact function.
+        target_arg (str or int): Keyword name or zero-based positional index
+            of the text argument. Pass the argument in the selected form when
+            calling the decorated function.
+        labels (sequence of str): Required entity labels.
+        **zink_kwargs: Additional options passed to :func:`redact`. Do not
+            pass ``numbered_entities``; the decorator sets it to true.
+
+    Returns:
+        callable: Wrapped function. String responses have placeholders replaced
+        with their original values; other response types pass through unchanged.
+
+    Notes:
+        The function sees the redacted argument, but its returned string is
+        re-identified and may contain sensitive data. Numbered redaction also
+        stores the source values in the local mapping file.
     """
     if labels is None:
         raise ValueError("The 'labels' argument is required for the shield decorator.")
@@ -221,19 +285,32 @@ def shield(target_arg, labels=None, **zink_kwargs):
     return decorator
 
 def where_mapping_file():
-    """Returns the path to the persistent mapping file."""
+    """Return the path to the numbered entity mapping file.
+
+    The call creates the ``~/.zink`` directory if needed. The mapping file
+    contains original entity text, so treat it as sensitive data.
+    """
     return get_default_mapping_path()
 
 def refresh_mapping_file():
-    """Deletes the persistent mapping file if it exists."""
+    """Delete the numbered entity mapping file if it exists.
+
+    Existing placeholders cannot be resolved after the file is deleted.
+    """
     path = get_default_mapping_path()
     if os.path.exists(path):
         os.remove(path)
 
 def prep(text, words):
-    """
-    Prepares text for redaction by wrapping specified words in asterisks.
-    These words will be excluded from redaction.
+    """Mark whole words to exclude from :func:`redact`.
+
+    Args:
+        text (str): Input text.
+        words (sequence of str): Case insensitive words or phrases to protect.
+
+    Returns:
+        str: Text with matching spans wrapped in asterisks. ``redact`` removes
+        the markers while leaving protected spans intact.
     """
     if not words:
         return text

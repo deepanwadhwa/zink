@@ -1,45 +1,43 @@
-API Reference
+API reference
 =============
 
-This section provides detailed information about the classes and functions provided by Zink.
+The functions below are the public ``zink`` interface. ``categories`` specifies
+entity labels; when omitted, the model uses ``person``, ``date`` and
+``location``. Inference labels are converted to lowercase.
 
-Main Module (`zink.zink`)
+Redaction and replacement
+-------------------------
+
+.. autofunction:: zink.redact
+
+.. autofunction:: zink.replace
+
+.. autofunction:: zink.replace_with_my_data
+
+Protected text and mapping
 --------------------------
 
-.. automodule:: zink.zink
+.. autofunction:: zink.prep
+
+.. autofunction:: zink.where_mapping_file
+
+.. autofunction:: zink.refresh_mapping_file
+
+Decorator
+---------
+
+.. autofunction:: zink.shield
+
+Result objects
+--------------
+
+.. autoclass:: zink.result.PseudonymizationResult
    :members:
-   :undoc-members:
-   :show-inheritance:
 
-Extractor Module (`zink.extractor`)
------------------------------------
-
-.. automodule:: zink.extractor
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-Merger Module (`zink.merger`)
-------------------------------
-
-.. automodule:: zink.merger
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-Result Module (`zink.result`)
------------------------------
-
-.. automodule:: zink.result
+.. autoclass:: zink.result.ReplacementDetail
    :members:
-   :undoc-members:
-   :show-inheritance:
 
-Replacer Subpackage (`zink.replacer`)
----------------------------------------
-
-.. automodule:: zink.replacer
-   :members:
-   :undoc-members:
-
-This subpackage provides various replacement strategies.  It is used internally by the main `zink.replace` function.
+The ``replacements`` field of a redaction result contains
+``ReplacementDetail`` objects. Replacement results currently contain the
+extractor's entity dictionaries instead; inspect ``anonymized_text`` for the
+transformed text.
