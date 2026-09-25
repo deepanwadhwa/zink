@@ -10,7 +10,7 @@ offline environment.
 ---------------------------
 
 Choose labels that describe the information you want to remove. Zink predicts
-spans from these labels; a label is a request, not a guarantee of detection.
+spans from these labels and may miss relevant text.
 
 .. code-block:: python
 
@@ -43,9 +43,9 @@ The markers are removed from the result.
 3. Replace with controlled values
 ---------------------------------
 
-For a readable synthetic note, supply replacements. Values are selected only
-for labels the model detects. Unmapped labels use Zink's normal replacement
-strategy. The selected value may vary when you provide a list.
+To replace detected spans with your own values, pass ``user_replacements``.
+Unmapped labels use Zink's default replacement strategy. When you provide a
+list, Zink selects one value from it.
 
 .. code-block:: python
 
@@ -83,8 +83,8 @@ label and source text across calls.
 The mapping file lives at ``~/.zink/mapping.json`` and stores original text in
 plain JSON. Restrict access to it and keep it out of published datasets. Call
 :func:`zink.refresh_mapping_file` only when you intentionally want to discard
-the mapping. The numbered placeholders are pseudonyms, not irreversible
-anonymization.
+the mapping. The numbered placeholders can be linked back to the original
+text through this file.
 
 For automation, see :func:`zink.shield` in the :doc:`api`. It restores original
 text in a decorated function's string response, so that response is sensitive

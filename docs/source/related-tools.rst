@@ -1,40 +1,33 @@
-Related tools and package overlap
-=================================
+Related tools
+=============
 
-Zink's niche is a Python text workflow that combines user supplied, zero-shot
-entity labels with redaction, synthetic replacement and optional persistent
-placeholder mapping. It uses GLiNER with a NuNerZero ONNX model for extraction;
-it does not introduce a new named entity recognition model.
+Zink uses GLiNER with a NuNerZero ONNX model to find entities. It then applies
+redaction or replacement. The table lists other packages that handle parts of
+this workflow.
 
-.. list-table:: Related packages
+.. list-table:: Package comparison
    :header-rows: 1
-   :widths: 18 36 46
+   :widths: 20 40 40
 
    * - Package
-     - Main approach
-     - Relationship to Zink
+     - Features
+     - Zink comparison
    * - `PyRedactKit <https://github.com/brootware/PyRedactKit>`_
-     - CLI redaction of several built-in structured types, with custom regular
-       expressions and an unredact workflow.
-     - Strong fit for known patterns and files. Zink accepts semantic labels
-       at inference time for text entities that need not have a regular expression.
+     - Command line redaction for built-in structured types and custom regular
+       expressions. Supports unredaction.
+     - Zink accepts entity labels at inference time to find spans in text.
    * - `Microsoft Presidio <https://microsoft.github.io/presidio/>`_
-     - Extensible detection and anonymization framework with recognizers,
-       NLP integrations and multiple operators.
-     - Broader, configurable platform. Zink offers a shorter path for trying
-       arbitrary labels using its bundled zero-shot model; Presidio can also
-       integrate ML recognizers, including GLiNER.
+     - Detection and anonymization framework with recognizers, NLP
+       integrations and replacement operators.
+     - Zink provides a single API around its default zero-shot model.
+       Presidio supports additional recognizers and operators.
    * - `scrubadub <https://scrubadub.readthedocs.io/en/stable/>`_
-     - Text cleaning with detectors, postprocessors and optional integrations.
-     - Useful for supported detector types and localization. Zink exposes
-       label driven model inference directly in its redaction API.
+     - Text cleaning with configurable detectors and postprocessors.
+     - Zink passes the requested entity labels to its model during redaction.
    * - `GLiNER <https://github.com/urchade/GLiNER>`_
-     - Generalist named entity recognition for user specified labels.
-     - Zink builds on GLiNER to apply redaction or synthetic replacement and
-       manage placeholder mappings; GLiNER is the underlying extraction tool.
+     - Named entity recognition with user-specified labels.
+     - Zink uses GLiNER for extraction and adds redaction, synthetic
+       replacements and placeholder mapping.
 
-These are differences in interface and workflow, not evidence that Zink is
-universally faster or more accurate. No comparable benchmark of these packages
-is included here. For known formats, deterministic recognizers may be preferable;
-for sensitive research text, validate recall on a representative, authorized
-sample before relying on any tool.
+The package has no benchmark against the tools in this table. Test detection
+on samples from your data before using its output in a research workflow.

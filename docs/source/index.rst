@@ -1,32 +1,28 @@
 Zink documentation
 ==================
 
-Zink detects text spans matching user supplied entity labels with a local
-zero-shot named entity recognition model, then redacts or replaces those spans.
-It is intended for preparing unstructured research text for analysis. Detection
-is probabilistic: inspect the output before sharing sensitive data.
-
-.. toctree::
-   :maxdepth: 2
-
-   tutorial
-   api
-   related-tools
-
-Installation
-------------
-
-Zink requires Python 3.11 or newer. Choose one inference backend::
-
-   pip install "zink[cpu]"
-
-For a compatible CUDA environment, use ``pip install "zink[gpu]"`` instead.
-The first use downloads the default NuNerZero ONNX model; subsequent inference
-runs locally with the cached model. Installation and initial model download
-therefore require network access.
+Zink finds text spans that match the entity labels you provide. It can redact
+those spans or replace them with other values. It uses a local named entity
+recognition model.
 
 Quick start
 -----------
+
+1. Install Zink
+~~~~~~~~~~~~~~~
+
+Zink requires Python 3.11 or newer. For CPU use, run:
+
+.. code-block:: console
+
+   pip install "zink[cpu]"
+
+For a compatible CUDA environment, run ``pip install "zink[gpu]"`` instead.
+The model downloads when you first import Zink with an inference backend
+installed. Later runs use the cached model.
+
+2. Redact text
+~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -37,7 +33,23 @@ Quick start
        categories=("person", "company"),
    )
    print(result.anonymized_text)
-   print(result.replacements)
 
-Model predictions can vary with the text and labels. See the :doc:`tutorial`
-for a research workflow and the :doc:`api` for exact parameters and results.
+``categories`` lists the entity types to find. Detected spans are replaced
+with placeholders such as ``person_REDACTED``. Model predictions vary with
+the text and labels, so check the output before sharing it.
+
+Next steps
+----------
+
+* :doc:`tutorial` shows redaction, custom replacements and consistent
+  placeholders across texts.
+* :doc:`api` lists the functions, parameters and result fields.
+* :doc:`related-tools` compares Zink with other text redaction packages.
+
+.. toctree::
+   :hidden:
+   :maxdepth: 2
+
+   tutorial
+   api
+   related-tools
