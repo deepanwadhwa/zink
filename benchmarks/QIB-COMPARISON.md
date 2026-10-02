@@ -5,8 +5,9 @@ Compared on [QIB](https://huggingface.co/datasets/deepanwa/QIB), using each tool
 | Comparison | Zink | Presidio + GLiNER |
 | --- | --- | --- |
 | Model | NuNerZero (ONNX) | gliner_multi_pii-v1 (PyTorch) |
-| Exact target detection¹ | **85.5%** | 80.2% |
-| Complete target coverage¹ | 87.4% | **87.7%** |
+| **F4 score¹** | **0.8520** | 0.7906 |
+| Precision¹ | **81.16%** | 64.22% |
+| Recall¹ | **85.47%** | 80.22% |
 | Median time per passage, including replacement | 443 ms | **92 ms** |
 | Total time for 1,750 passages | 783 s | **160 s** |
 | Peak process memory | 4.1 GiB | **2.8 GiB** |
@@ -20,9 +21,11 @@ Compared on [QIB](https://huggingface.co/datasets/deepanwa/QIB), using each tool
 | Masking, hashing and encryption | No built-in operators | Built-in anonymizer operators |
 | Local inference after download | Yes | Yes |
 
-Zink detected more exact target spans. Presidio was about **4.9× faster**, used less memory and had similar complete-target coverage.
+Zink achieved higher F4, precision and recall. Presidio was about **4.9× faster** and used less memory.
 
-¹ Accuracy uses 1,734 useful passages. Exact detection requires matching both target boundaries; coverage allows broader detected spans. QIB annotates one target per passage, so these are target-detection rates, not precision or F1. QIB is synthetic and maintained by the Zink author.
+For anonymization, a missed identifier can expose sensitive information; an unnecessary redaction removes useful text. We prioritize recall because leaving identifying information behind is the more consequential error. F4 reflects that priority by weighting recall 16 times as heavily as precision in its harmonic mean, while still accounting for unnecessary detections.
+
+¹ Micro-averaged scores across 1,734 useful QIB passages. A true positive matches both annotated target boundaries; unmatched predictions count as false positives and missed targets as false negatives. F4 = 17PR / (16P + R). QIB is synthetic and maintained by the Zink author.
 
 Measured in one CPU run per tool on an Apple M3 with 16 GiB RAM. Both receive the target type, never its value or offsets. Emphasis asterisks are removed consistently from both inputs. Timings include placeholder replacement; total time also includes scoring and result writing. Memory includes initialization.
 
