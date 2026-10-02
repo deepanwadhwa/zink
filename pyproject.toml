@@ -46,6 +46,10 @@ include-package-data = true
 # Start with undefined names; expand coverage as existing code is cleaned up.
 select = ["F821", "F822", "F823"]
 
+[tool.pytest.ini_options]
+# Benchmark helpers live in the checkout, outside the installed zink package.
+pythonpath = ["."]
+
 [project.urls]
 Homepage = "https://github.com/deepanwadhwa/zink"
 Repository = "https://github.com/deepanwadhwa/zink"
