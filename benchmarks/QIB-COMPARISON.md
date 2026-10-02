@@ -1,6 +1,8 @@
 # Zink vs. Microsoft Presidio
 
-Compared on [QIB](https://huggingface.co/datasets/deepanwa/QIB), using each tool’s own model. Presidio uses the GLiNER model from its [official integration example](https://presidio.dataprivacystack.org/samples/python/gliner/). Both receive the same entity label for each passage.
+We created the [Quasi-Identifier Benchmark (QIB)](https://huggingface.co/datasets/deepanwa/QIB) to address the lack of diverse benchmarks for quasi-identifier detection. It contains 1,750 examples across 35 categories, including personal preferences and security-question answers.
+
+This comparison uses each tool’s own model. Presidio uses the GLiNER model from its [official integration example](https://presidio.dataprivacystack.org/samples/python/gliner/). Both receive the same entity label for each passage.
 
 | Comparison | Zink | Presidio + GLiNER |
 | --- | --- | --- |
@@ -21,7 +23,7 @@ Zink achieved higher F4, precision and recall. Presidio was about **4.9× faster
 
 For anonymization, a missed identifier can expose sensitive information; an unnecessary redaction removes useful text. We prioritize recall because leaving identifying information behind is the more consequential error. F4 reflects that priority by weighting recall 16 times as heavily as precision in its harmonic mean, while still accounting for unnecessary detections.
 
-¹ Micro-averaged scores across 1,734 useful QIB passages. A true positive matches both annotated target boundaries; unmatched predictions count as false positives and missed targets as false negatives. F4 = 17PR / (16P + R). QIB is synthetic and maintained by the Zink author.
+¹ Micro-averaged scores across 1,734 useful QIB passages. A true positive matches both annotated target boundaries; unmatched predictions count as false positives and missed targets as false negatives. F4 = 17PR / (16P + R).
 
 Measured in one CPU run per tool on an Apple M3 with 16 GiB RAM. Both receive the target type, never its value or offsets. Emphasis asterisks are removed consistently from both inputs. Timings include placeholder replacement; total time also includes scoring and result writing. Memory includes initialization.
 
