@@ -80,7 +80,7 @@ def main():
     for topic, row in z["by_topic_useful"].items():
         other = p["by_topic_useful"][topic]
         lines.append(f'| {topic} | {row["documents"]} | {row["exact_rate"]:.1%} | {other["exact_rate"]:.1%} | {row["fully_covered_rate"]:.1%} | {other["fully_covered_rate"]:.1%} |')
-    path = ROOT / "QIB-COMPARISON.md"
+    path = ROOT / "QIB-METHODS.md"
     content = path.read_text().split("## Comparison table from the complete QIB runs")[0]
     path.write_text(content + "\n" + "\n".join(lines) + "\n")
 
