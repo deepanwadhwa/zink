@@ -20,7 +20,6 @@ Compared on [QIB](https://huggingface.co/datasets/deepanwa/QIB), using each tool
 | Replace with your own values | `replace_with_my_data()` accepts replacement lists by label | Configure `replace` with a fixed value per entity type; lists need custom code |
 | Replace with generated names / places | `replace()` generates values using Faker and category data | Supply a custom replacement function, e.g. one calling Faker |
 | Reuse the same numbered placeholder across documents | `redact(numbered_entities=True)` saves and reloads a JSON mapping | Implement a mapping operator and save/reload its mapping in application code |
-| Network needed for inference after models are downloaded | No | No |
 
 Zink achieved higher F4, precision and recall. Presidio was about **4.9× faster** and used less memory.
 
