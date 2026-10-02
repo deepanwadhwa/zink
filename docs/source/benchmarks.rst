@@ -13,12 +13,15 @@ per passage and perform detection plus placeholder replacement.
    * - Metric
      - Zink
      - Presidio + GLiNER
-   * - Exact target-span detection
-     - 85.5%
-     - 80.2%
-   * - Complete target coverage
-     - 87.4%
-     - 87.7%
+   * - F4
+     - 0.8520
+     - 0.7906
+   * - Precision
+     - 81.16%
+     - 64.22%
+   * - Recall
+     - 85.47%
+     - 80.22%
    * - All 1,750 passages: processing time
      - 782.8 s
      - 160.5 s
@@ -39,11 +42,11 @@ it is not steady-state memory. Zink uses ONNX and two extraction passes; Presidi
 uses PyTorch with its documented GLiNER settings and default chunking and threshold.
 
 Accuracy uses the 1,734 QIB records marked useful, out of 1,750 total records.
-Each has one annotated target; other sensitive text may be present. Extra
-detections therefore are not automatically false positives, and these results
-do not establish ordinary precision or F4. Exact detection requires both target
-offsets to match. Complete coverage permits wider spans and uses the union of
-detected spans; it does not guarantee that every sensitive item was removed.
+Scores are micro-averaged using exact target boundaries, ignoring predicted label
+names. Duplicate spans are counted once. Unmatched predictions count as false
+positives and missed targets as false negatives. F4 = 17PR / (16P + R).
+We prioritize recall because a missed identifier can expose sensitive information,
+whereas an unnecessary redaction removes useful text.
 
 The semantic labels come from the annotations, lowercased with underscores
 replaced by spaces. Neither tool receives the target value or offsets. Emphasis
@@ -51,10 +54,12 @@ asterisks are removed for both tools and gold offsets are updated, because
 asterisks activate Zink's exclusion syntax. The dataset revision is
 ``af345705a03852b8bd77c2e69c971a0361b1e71d``.
 
-QIB is a synthetic dataset maintained by the Zink author. This comparison does
-not establish performance on clinical records or independent research datasets.
-It uses a different protocol from the historical README benchmark table.
+We created QIB to address the lack of diverse benchmarks for quasi-identifier
+detection. It contains 1,750 examples across 35 categories, including personal
+preferences and security-question answers. This run uses a separate scoring
+protocol from the historical README benchmark table.
 
-See the `full protocol, environment, feature table and per-topic results
+See the `comparison table
 <https://github.com/deepanwadhwa/zink/blob/main/benchmarks/QIB-COMPARISON.md>`_
-and `QIB dataset card <https://huggingface.co/datasets/deepanwa/QIB>`_.
+and `methodology and reproduction commands
+<https://github.com/deepanwadhwa/zink/blob/main/benchmarks/QIB-METHODS.md>`_.

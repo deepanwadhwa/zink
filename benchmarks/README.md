@@ -4,6 +4,10 @@ The main accuracy evaluation now uses [QIB](QIB-COMPARISON.md), comparing
 Zink's NuNerZero ONNX workflow with the GLiNER model in Presidio's official
 integration example. Both receive the same semantic prompts. The spaCy/rule
 configuration is retained as a supplementary baseline.
+For F4, precision and recall, use the [primary QIB reproduction commands](QIB-METHODS.md#corpus-and-reproducibility). They also explain how to rescore saved predictions without model inference.
+
+## Historical smoke test
+
 The smoke results below only validate the original runner.
 
 See [COMPARISON.md](COMPARISON.md) for installation, downloads, setup,

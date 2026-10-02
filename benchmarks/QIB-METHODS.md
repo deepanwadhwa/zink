@@ -1,10 +1,8 @@
 # Zink versus Presidio on QIB
 
-This replaces the six-example smoke test as the main accuracy evaluation. QIB
-is a synthetic quasi-identifier benchmark. Its passages were generated with
-Gemini and manually reviewed according to its dataset card. It is maintained by
-the Zink author, so this is not an independent benchmark or proof of real-world
-performance. [Dataset card](https://huggingface.co/datasets/deepanwa/QIB).
+We created [QIB](https://huggingface.co/datasets/deepanwa/QIB) to address the
+lack of diverse benchmarks for quasi-identifier detection. The primary comparison
+uses Zink and Presidio with GLiNER; the spaCy/rule run is supplementary.
 
 ## Corpus and reproducibility
 
@@ -17,19 +15,34 @@ words (median 33).
 The filename does not mean every record has `useful: true`. The report includes
 both sets; useful records are the primary quality result.
 
+Run these commands sequentially from the repository root in a Python environment:
+
 ```sh
-.venv/bin/python benchmarks/qib_presidio.py --system presidio \
-  --output /tmp/qib-presidio-new --repeats 3
-.venv/bin/python benchmarks/qib_presidio.py --system zink \
-  --output /tmp/qib-zink-new --repeats 1
+python -m pip install -e '.[cpu]' 'presidio-analyzer[gliner]==2.2.364' 'presidio-anonymizer==2.2.364'
+python -m pip install 'https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl'
+python benchmarks/qib_presidio.py --system zink --output /tmp/qib-zink-new --repeats 1
+python benchmarks/qib_presidio.py --system presidio-gliner --anonymize --output /tmp/qib-presidio-gliner-new --repeats 1
 ```
 
-Run sequentially from the repository root using the environment documented in
-[COMPARISON.md](COMPARISON.md). The runner downloads the pinned source, validates
-its offsets, reports its SHA-256, writes per-record prediction offsets and labels,
-and retains each pass's predictions. Choose new output directories for each run.
-The recorded environment freeze and cached model revision appear below. The
-loader still follows the model repository default revision in future runs.
+Choose new output directories for each run. Each contains the downloaded corpus,
+per-record predictions and `results.json`, including F4, precision, recall, TP,
+FP and FN. The pinned dataset is validated before and after preprocessing.
+The recorded dependency versions are in [qib-environment-freeze.txt](qib-environment-freeze.txt).
+Zink's recorded model revision appears below; its loader follows the model's
+main branch, so future runs can use newer assets unless that revision is pinned.
+
+To recompute scores from the committed predictions without downloading models
+or rerunning inference:
+
+```sh
+python benchmarks/qib_presidio.py --rescore benchmarks/qib-zink
+python benchmarks/qib_presidio.py --rescore benchmarks/qib-presidio-gliner
+python benchmarks/render_qib_report.py
+```
+
+Rescoring updates quality fields in `results.json` from the last recorded pass,
+matching the runner's summary convention. Predictions and timing measurements
+remain unchanged. The renderer updates the detailed tables below.
 
 ## Common formatting normalization
 
@@ -41,14 +54,7 @@ uses only the source text, not a target-specific recognition rule. Offsets are
 validated both before and after normalization. Initial unnormalized runs were
 quarantined and are not used as final evidence.
 
-## Primary Presidio GLiNER setup
-
-```sh
-uv pip install --python .venv/bin/python 'presidio-analyzer[gliner]==2.2.364' presidio-anonymizer
-uv pip install --python .venv/bin/python 'https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl'
-.venv/bin/python benchmarks/qib_presidio.py --system presidio-gliner --anonymize \
-  --output /tmp/qib-presidio-gliner-new --repeats 1
-```
+## Presidio download and setup measurements
 
 The extra uses GLiNER in addition to Presidio. The small spaCy wheel download
 was 12.2 MiB. Prefetching the pinned GLiNER model downloaded a snapshot containing
@@ -111,21 +117,25 @@ pet names, venues and street names are excluded from the conservative mapping.
 
 ## What accuracy means here
 
-Every passage has one annotated target. Other valid sensitive entities may also
-occur. Consequently unmatched predictions are **not automatically false
-positives**. We report:
+The main comparison reports micro-averaged F4, precision and recall across the
+1,734 useful records. Each passage has one annotated target. We compare character
+boundaries, ignoring predicted label names, and deduplicate identical spans.
 
-- Exact target-span detection, ignoring predicted label: both offsets match.
-- Full target-character coverage: the union of detected spans covers every
-  character of the target; this permits wider spans or adjacent spans.
-- Any overlap: diagnostic only; partial detection can leave identifying text.
-- Predicted/nonmatching span counts, without presenting them as true precision.
+- **TP:** a predicted span matches both target boundaries.
+- **FP:** a predicted span does not match the target boundaries.
+- **FN:** no prediction matches the target boundaries.
+- **Precision:** TP / (TP + FP).
+- **Recall:** TP / (TP + FN).
+- **F4:** 17TP / (17TP + 16FN + FP).
 
-Full coverage describes candidate redaction spans, not anonymizer operator output.
-Overlapping-result resolution could change the final text. The accuracy report
-therefore makes a detection/coverage claim, not a guarantee of complete privacy.
-Ordinary precision/F4 would require exhaustive annotations. The earlier QIB
-README metrics use a different protocol and should not be mixed with these rates.
+A boundary mismatch counts as both an FP and an FN. Zero-denominator scores are
+reported as zero. F4 emphasizes recall because missed identifiers can leave
+sensitive information exposed. These scores assess detection against the QIB
+annotations; placeholder replacement is included in the timing.
+
+Exact-span rates, full character coverage and overlap remain supplementary
+metrics below. Coverage allows broader or adjacent predicted spans. The historical
+README results use a separate protocol and are not reproduced by this run.
 
 ## Zero-shot detection and replacements
 
@@ -218,6 +228,7 @@ can be imported by the tested Presidio installation too; attributing every share
 dependency exclusively to one tool would be incorrect.
 
 
+
 ## Comparison table from the complete QIB runs
 
 Quality uses 1,734 useful records; speed processes all 1,750 passages,
@@ -227,6 +238,9 @@ Both receive the same annotation-assisted semantic label; neither receives the t
 
 | Aspect | Zink | Presidio + recommended GLiNER |
 | --- | --- | --- |
+| F4 (useful records) | 0.8520 | 0.7906 |
+| Precision (useful records) | 81.16% | 64.22% |
+| Recall (useful records) | 85.47% | 80.22% |
 | QIB exact target-span detection (useful) | 1482/1734 (85.5%) | 1391/1734 (80.2%) |
 | Full QIB exact detection (all 1,750 records) | 1492/1750 (85.3%) | 1401/1750 (80.1%) |
 | QIB complete target coverage (useful) | 1516/1734 (87.4%) | 1520/1734 (87.7%) |

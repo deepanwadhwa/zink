@@ -225,7 +225,13 @@
     "overlap_count": 1573,
     "overlap_rate": 0.8988571428571429,
     "predicted_spans": 1842,
-    "nonmatching_spans": 350
+    "nonmatching_spans": 350,
+    "true_positives": 1492,
+    "false_positives": 350,
+    "false_negatives": 258,
+    "precision": 0.8099891422366993,
+    "recall": 0.8525714285714285,
+    "f4": 0.8499430333087594
   },
   "useful_records": {
     "documents": 1734,
@@ -236,7 +242,13 @@
     "overlap_count": 1562,
     "overlap_rate": 0.9008073817762399,
     "predicted_spans": 1826,
-    "nonmatching_spans": 344
+    "nonmatching_spans": 344,
+    "true_positives": 1482,
+    "false_positives": 344,
+    "false_negatives": 252,
+    "precision": 0.8116100766703176,
+    "recall": 0.8546712802768166,
+    "f4": 0.8520121745011836
   },
   "shared_useful_records": {
     "documents": 503,
@@ -247,7 +259,13 @@
     "overlap_count": 399,
     "overlap_rate": 0.7932405566600398,
     "predicted_spans": 467,
-    "nonmatching_spans": 86
+    "nonmatching_spans": 86,
+    "true_positives": 381,
+    "false_positives": 86,
+    "false_negatives": 122,
+    "precision": 0.815845824411135,
+    "recall": 0.757455268389662,
+    "f4": 0.7606576629477393
   },
   "outside_shared_useful_records": {
     "documents": 1231,
@@ -258,7 +276,13 @@
     "overlap_count": 1163,
     "overlap_rate": 0.9447603574329814,
     "predicted_spans": 1359,
-    "nonmatching_spans": 258
+    "nonmatching_spans": 258,
+    "true_positives": 1101,
+    "false_positives": 258,
+    "false_negatives": 130,
+    "precision": 0.8101545253863135,
+    "recall": 0.8943948009748173,
+    "f4": 0.8889574922821183
   },
   "by_topic_useful": {
     "Mother's maiden name": {
@@ -270,7 +294,13 @@
       "overlap_count": 42,
       "overlap_rate": 0.9130434782608695,
       "predicted_spans": 70,
-      "nonmatching_spans": 38
+      "nonmatching_spans": 38,
+      "true_positives": 32,
+      "false_positives": 38,
+      "false_negatives": 14,
+      "precision": 0.45714285714285713,
+      "recall": 0.6956521739130435,
+      "f4": 0.674937965260546
     },
     "City of birth": {
       "documents": 49,
@@ -281,7 +311,13 @@
       "overlap_count": 47,
       "overlap_rate": 0.9591836734693877,
       "predicted_spans": 49,
-      "nonmatching_spans": 2
+      "nonmatching_spans": 2,
+      "true_positives": 47,
+      "false_positives": 2,
+      "false_negatives": 2,
+      "precision": 0.9591836734693877,
+      "recall": 0.9591836734693877,
+      "f4": 0.9591836734693877
     },
     "High school mascot": {
       "documents": 50,
@@ -292,7 +328,13 @@
       "overlap_count": 49,
       "overlap_rate": 0.98,
       "predicted_spans": 54,
-      "nonmatching_spans": 8
+      "nonmatching_spans": 8,
+      "true_positives": 46,
+      "false_positives": 8,
+      "false_negatives": 4,
+      "precision": 0.8518518518518519,
+      "recall": 0.92,
+      "f4": 0.9156908665105387
     },
     "First pet's name": {
       "documents": 50,
@@ -303,7 +345,13 @@
       "overlap_count": 48,
       "overlap_rate": 0.96,
       "predicted_spans": 53,
-      "nonmatching_spans": 6
+      "nonmatching_spans": 6,
+      "true_positives": 47,
+      "false_positives": 6,
+      "false_negatives": 3,
+      "precision": 0.8867924528301887,
+      "recall": 0.94,
+      "f4": 0.936694021101993
     },
     "Street you grew up on": {
       "documents": 50,
@@ -314,7 +362,13 @@
       "overlap_count": 49,
       "overlap_rate": 0.98,
       "predicted_spans": 51,
-      "nonmatching_spans": 3
+      "nonmatching_spans": 3,
+      "true_positives": 48,
+      "false_positives": 3,
+      "false_negatives": 2,
+      "precision": 0.9411764705882353,
+      "recall": 0.96,
+      "f4": 0.9588719153936546
     },
     "First car's make/model": {
       "documents": 50,
@@ -325,7 +379,13 @@
       "overlap_count": 50,
       "overlap_rate": 1.0,
       "predicted_spans": 52,
-      "nonmatching_spans": 4
+      "nonmatching_spans": 4,
+      "true_positives": 48,
+      "false_positives": 4,
+      "false_negatives": 2,
+      "precision": 0.9230769230769231,
+      "recall": 0.96,
+      "f4": 0.9577464788732394
     },
     "Favorite childhood friend": {
       "documents": 50,
@@ -336,7 +396,13 @@
       "overlap_count": 40,
       "overlap_rate": 0.8,
       "predicted_spans": 46,
-      "nonmatching_spans": 7
+      "nonmatching_spans": 7,
+      "true_positives": 39,
+      "false_positives": 7,
+      "false_negatives": 11,
+      "precision": 0.8478260869565217,
+      "recall": 0.78,
+      "f4": 0.7836879432624113
     },
     "City or town of first job": {
       "documents": 50,
@@ -347,7 +413,13 @@
       "overlap_count": 46,
       "overlap_rate": 0.92,
       "predicted_spans": 48,
-      "nonmatching_spans": 2
+      "nonmatching_spans": 2,
+      "true_positives": 46,
+      "false_positives": 2,
+      "false_negatives": 4,
+      "precision": 0.9583333333333334,
+      "recall": 0.92,
+      "f4": 0.9221698113207547
     },
     "Maternal grandmother's maiden name": {
       "documents": 49,
@@ -358,7 +430,13 @@
       "overlap_count": 45,
       "overlap_rate": 0.9183673469387755,
       "predicted_spans": 47,
-      "nonmatching_spans": 4
+      "nonmatching_spans": 4,
+      "true_positives": 43,
+      "false_positives": 4,
+      "false_negatives": 6,
+      "precision": 0.9148936170212766,
+      "recall": 0.8775510204081632,
+      "f4": 0.8796630565583634
     },
     "Favorite color": {
       "documents": 49,
@@ -369,7 +447,13 @@
       "overlap_count": 44,
       "overlap_rate": 0.8979591836734694,
       "predicted_spans": 61,
-      "nonmatching_spans": 23
+      "nonmatching_spans": 23,
+      "true_positives": 38,
+      "false_positives": 23,
+      "false_negatives": 11,
+      "precision": 0.6229508196721312,
+      "recall": 0.7755102040816326,
+      "f4": 0.7644970414201183
     },
     "Favorite food": {
       "documents": 50,
@@ -380,7 +464,13 @@
       "overlap_count": 50,
       "overlap_rate": 1.0,
       "predicted_spans": 82,
-      "nonmatching_spans": 40
+      "nonmatching_spans": 40,
+      "true_positives": 42,
+      "false_positives": 40,
+      "false_negatives": 8,
+      "precision": 0.5121951219512195,
+      "recall": 0.84,
+      "f4": 0.8095238095238095
     },
     "Favorite movie": {
       "documents": 50,
@@ -391,7 +481,13 @@
       "overlap_count": 50,
       "overlap_rate": 1.0,
       "predicted_spans": 53,
-      "nonmatching_spans": 3
+      "nonmatching_spans": 3,
+      "true_positives": 50,
+      "false_positives": 3,
+      "false_negatives": 0,
+      "precision": 0.9433962264150944,
+      "recall": 1.0,
+      "f4": 0.9964830011723329
     },
     "Favorite book": {
       "documents": 50,
@@ -402,7 +498,13 @@
       "overlap_count": 48,
       "overlap_rate": 0.96,
       "predicted_spans": 52,
-      "nonmatching_spans": 5
+      "nonmatching_spans": 5,
+      "true_positives": 47,
+      "false_positives": 5,
+      "false_negatives": 3,
+      "precision": 0.9038461538461539,
+      "recall": 0.94,
+      "f4": 0.937793427230047
     },
     "Favorite song": {
       "documents": 50,
@@ -413,7 +515,13 @@
       "overlap_count": 49,
       "overlap_rate": 0.98,
       "predicted_spans": 50,
-      "nonmatching_spans": 1
+      "nonmatching_spans": 1,
+      "true_positives": 49,
+      "false_positives": 1,
+      "false_negatives": 1,
+      "precision": 0.98,
+      "recall": 0.98,
+      "f4": 0.98
     },
     "Favorite sports team": {
       "documents": 50,
@@ -424,7 +532,13 @@
       "overlap_count": 47,
       "overlap_rate": 0.94,
       "predicted_spans": 53,
-      "nonmatching_spans": 9
+      "nonmatching_spans": 9,
+      "true_positives": 44,
+      "false_positives": 9,
+      "false_negatives": 6,
+      "precision": 0.8301886792452831,
+      "recall": 0.88,
+      "f4": 0.876905041031653
     },
     "Favorite artist/band": {
       "documents": 50,
@@ -435,7 +549,13 @@
       "overlap_count": 48,
       "overlap_rate": 0.96,
       "predicted_spans": 55,
-      "nonmatching_spans": 9
+      "nonmatching_spans": 9,
+      "true_positives": 46,
+      "false_positives": 9,
+      "false_negatives": 4,
+      "precision": 0.8363636363636363,
+      "recall": 0.92,
+      "f4": 0.9146198830409357
     },
     "Favorite author": {
       "documents": 49,
@@ -446,7 +566,13 @@
       "overlap_count": 28,
       "overlap_rate": 0.5714285714285714,
       "predicted_spans": 30,
-      "nonmatching_spans": 2
+      "nonmatching_spans": 2,
+      "true_positives": 28,
+      "false_positives": 2,
+      "false_negatives": 21,
+      "precision": 0.9333333333333333,
+      "recall": 0.5714285714285714,
+      "f4": 0.5847665847665847
     },
     "Dream vacation destination": {
       "documents": 50,
@@ -457,7 +583,13 @@
       "overlap_count": 49,
       "overlap_rate": 0.98,
       "predicted_spans": 66,
-      "nonmatching_spans": 19
+      "nonmatching_spans": 19,
+      "true_positives": 47,
+      "false_positives": 19,
+      "false_negatives": 3,
+      "precision": 0.7121212121212122,
+      "recall": 0.94,
+      "f4": 0.9226327944572749
     },
     "Favorite board game/video game": {
       "documents": 50,
@@ -468,7 +600,13 @@
       "overlap_count": 48,
       "overlap_rate": 0.96,
       "predicted_spans": 58,
-      "nonmatching_spans": 10
+      "nonmatching_spans": 10,
+      "true_positives": 48,
+      "false_positives": 10,
+      "false_negatives": 2,
+      "precision": 0.8275862068965517,
+      "recall": 0.96,
+      "f4": 0.951048951048951
     },
     "Make and model of your first bicycle": {
       "documents": 50,
@@ -479,7 +617,13 @@
       "overlap_count": 49,
       "overlap_rate": 0.98,
       "predicted_spans": 49,
-      "nonmatching_spans": 1
+      "nonmatching_spans": 1,
+      "true_positives": 48,
+      "false_positives": 1,
+      "false_negatives": 2,
+      "precision": 0.9795918367346939,
+      "recall": 0.96,
+      "f4": 0.9611307420494699
     },
     "What was your childhood nickname?": {
       "documents": 50,
@@ -490,7 +634,13 @@
       "overlap_count": 50,
       "overlap_rate": 1.0,
       "predicted_spans": 52,
-      "nonmatching_spans": 2
+      "nonmatching_spans": 2,
+      "true_positives": 50,
+      "false_positives": 2,
+      "false_negatives": 0,
+      "precision": 0.9615384615384616,
+      "recall": 1.0,
+      "f4": 0.9976525821596244
     },
     "What is the name of the hospital where you were born?": {
       "documents": 50,
@@ -501,7 +651,13 @@
       "overlap_count": 50,
       "overlap_rate": 1.0,
       "predicted_spans": 50,
-      "nonmatching_spans": 0
+      "nonmatching_spans": 0,
+      "true_positives": 50,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f4": 1.0
     },
     "What is the title of your favorite childhood book?": {
       "documents": 50,
@@ -512,7 +668,13 @@
       "overlap_count": 47,
       "overlap_rate": 0.94,
       "predicted_spans": 53,
-      "nonmatching_spans": 6
+      "nonmatching_spans": 6,
+      "true_positives": 47,
+      "false_positives": 6,
+      "false_negatives": 3,
+      "precision": 0.8867924528301887,
+      "recall": 0.94,
+      "f4": 0.936694021101993
     },
     "In what city did you meet your spouse/partner?": {
       "documents": 50,
@@ -523,7 +685,13 @@
       "overlap_count": 49,
       "overlap_rate": 0.98,
       "predicted_spans": 54,
-      "nonmatching_spans": 5
+      "nonmatching_spans": 5,
+      "true_positives": 49,
+      "false_positives": 5,
+      "false_negatives": 1,
+      "precision": 0.9074074074074074,
+      "recall": 0.98,
+      "f4": 0.9754098360655737
     },
     "What is the name of a place you visited as a child?": {
       "documents": 50,
@@ -534,7 +702,13 @@
       "overlap_count": 44,
       "overlap_rate": 0.88,
       "predicted_spans": 55,
-      "nonmatching_spans": 12
+      "nonmatching_spans": 12,
+      "true_positives": 43,
+      "false_positives": 12,
+      "false_negatives": 7,
+      "precision": 0.7818181818181819,
+      "recall": 0.86,
+      "f4": 0.8549707602339182
     },
     "What was the make and model of your first computer?": {
       "documents": 50,
@@ -545,7 +719,13 @@
       "overlap_count": 50,
       "overlap_rate": 1.0,
       "predicted_spans": 53,
-      "nonmatching_spans": 3
+      "nonmatching_spans": 3,
+      "true_positives": 50,
+      "false_positives": 3,
+      "false_negatives": 0,
+      "precision": 0.9433962264150944,
+      "recall": 1.0,
+      "f4": 0.9964830011723329
     },
     "What was the last name of your favorite teacher in high school?": {
       "documents": 50,
@@ -556,7 +736,13 @@
       "overlap_count": 6,
       "overlap_rate": 0.12,
       "predicted_spans": 8,
-      "nonmatching_spans": 3
+      "nonmatching_spans": 3,
+      "true_positives": 5,
+      "false_positives": 3,
+      "false_negatives": 45,
+      "precision": 0.625,
+      "recall": 0.1,
+      "f4": 0.1051980198019802
     },
     "What was the name of the street of your first childhood home?": {
       "documents": 50,
@@ -567,7 +753,13 @@
       "overlap_count": 48,
       "overlap_rate": 0.96,
       "predicted_spans": 51,
-      "nonmatching_spans": 4
+      "nonmatching_spans": 4,
+      "true_positives": 47,
+      "false_positives": 4,
+      "false_negatives": 3,
+      "precision": 0.9215686274509803,
+      "recall": 0.94,
+      "f4": 0.9388954171562868
     },
     "Who was your childhood hero?": {
       "documents": 50,
@@ -578,7 +770,13 @@
       "overlap_count": 48,
       "overlap_rate": 0.96,
       "predicted_spans": 62,
-      "nonmatching_spans": 16
+      "nonmatching_spans": 16,
+      "true_positives": 46,
+      "false_positives": 16,
+      "false_negatives": 4,
+      "precision": 0.7419354838709677,
+      "recall": 0.92,
+      "f4": 0.9071925754060325
     },
     "What is the name of your favorite restaurant?": {
       "documents": 49,
@@ -589,7 +787,13 @@
       "overlap_count": 47,
       "overlap_rate": 0.9591836734693877,
       "predicted_spans": 54,
-      "nonmatching_spans": 8
+      "nonmatching_spans": 8,
+      "true_positives": 46,
+      "false_positives": 8,
+      "false_negatives": 3,
+      "precision": 0.8518518518518519,
+      "recall": 0.9387755102040817,
+      "f4": 0.9331742243436754
     },
     "What is the title of a movie you saw in the last year?": {
       "documents": 50,
@@ -600,7 +804,13 @@
       "overlap_count": 49,
       "overlap_rate": 0.98,
       "predicted_spans": 52,
-      "nonmatching_spans": 3
+      "nonmatching_spans": 3,
+      "true_positives": 49,
+      "false_positives": 3,
+      "false_negatives": 1,
+      "precision": 0.9423076923076923,
+      "recall": 0.98,
+      "f4": 0.9776995305164319
     },
     "What is a word that describes you best?": {
       "documents": 49,
@@ -611,7 +821,13 @@
       "overlap_count": 37,
       "overlap_rate": 0.7551020408163265,
       "predicted_spans": 50,
-      "nonmatching_spans": 13
+      "nonmatching_spans": 13,
+      "true_positives": 37,
+      "false_positives": 13,
+      "false_negatives": 12,
+      "precision": 0.74,
+      "recall": 0.7551020408163265,
+      "f4": 0.7541966426858513
     },
     "What is your favorite fictional character?": {
       "documents": 50,
@@ -622,7 +838,13 @@
       "overlap_count": 48,
       "overlap_rate": 0.96,
       "predicted_spans": 69,
-      "nonmatching_spans": 23
+      "nonmatching_spans": 23,
+      "true_positives": 46,
+      "false_positives": 23,
+      "false_negatives": 4,
+      "precision": 0.6666666666666666,
+      "recall": 0.92,
+      "f4": 0.8998849252013809
     },
     "If you could have any superpower, what would it be?": {
       "documents": 44,
@@ -633,7 +855,13 @@
       "overlap_count": 14,
       "overlap_rate": 0.3181818181818182,
       "predicted_spans": 22,
-      "nonmatching_spans": 19
+      "nonmatching_spans": 19,
+      "true_positives": 3,
+      "false_positives": 19,
+      "false_negatives": 41,
+      "precision": 0.13636363636363635,
+      "recall": 0.06818181818181818,
+      "f4": 0.07024793388429752
     },
     "What is your favorite quote?": {
       "documents": 50,
@@ -644,7 +872,13 @@
       "overlap_count": 49,
       "overlap_rate": 0.98,
       "predicted_spans": 62,
-      "nonmatching_spans": 31
+      "nonmatching_spans": 31,
+      "true_positives": 31,
+      "false_positives": 31,
+      "false_negatives": 19,
+      "precision": 0.5,
+      "recall": 0.62,
+      "f4": 0.611368909512761
     }
   },
   "setup_seconds": 6.737045875008334,

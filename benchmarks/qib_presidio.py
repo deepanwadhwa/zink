@@ -41,6 +41,40 @@ def summarize(records):
         result[metric + "_rate"] = count / n if n else None
     result["predicted_spans"] = sum(r["predicted_spans"] for r in records)
     result["nonmatching_spans"] = sum(r["nonmatching_spans"] for r in records)
+    tp = result["exact_count"]
+    fp = result["nonmatching_spans"]
+    fn = n - tp
+    result.update({
+        "true_positives": tp, "false_positives": fp, "false_negatives": fn,
+        "precision": tp / (tp + fp) if tp + fp else 0.0,
+        "recall": tp / (tp + fn) if tp + fn else 0.0,
+        "f4": 17 * tp / (17 * tp + 16 * fn + fp) if tp + fn + fp else 0.0,
+    })
+    return result
+
+
+def rescore_saved_results(directory):
+    """Recompute quality metrics from the last recorded pass; preserve timings."""
+    path = directory / "results.json"
+    result = json.loads(path.read_text())
+    predictions = directory / f"predictions-{result['repeats']}.jsonl"
+    records = [json.loads(line) for line in predictions.read_text().splitlines()]
+    for record in records:
+        row = {"entity_start": record["target_start"], "entity_end": record["target_end"]}
+        record.update(target_metrics(row, record["predictions"]))
+        shared_predictions = ([p for p in record["predictions"] if p[2] == record["mapped_presidio_type"]]
+                              if result["system"] == "presidio" else record["predictions"])
+        record["shared_metrics"] = target_metrics(row, shared_predictions)
+    useful = [r for r in records if r["useful"]]
+    result.update({
+        "all_records": summarize(records),
+        "useful_records": summarize(useful),
+        "shared_useful_records": summarize([r["shared_metrics"] for r in useful if r["mapped_presidio_type"]]),
+        "outside_shared_useful_records": summarize([r for r in useful if not r["mapped_presidio_type"]]),
+        "by_topic_useful": {topic: summarize([r for r in useful if r["topic"] == topic])
+                            for topic in result["by_topic_useful"]},
+    })
+    path.write_text(json.dumps(result, indent=2) + "\n")
     return result
 
 
@@ -59,13 +93,21 @@ def normalize_emphasis(row):
 
 def main():
     parser = argparse.ArgumentParser(__doc__)
-    parser.add_argument("--system", choices=["zink", "presidio", "presidio-gliner"], required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--corpus", type=Path, default=Path("/private/tmp/qib.json"))
+    parser.add_argument("--system", choices=["zink", "presidio", "presidio-gliner"])
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--rescore", type=Path, help="Update saved quality metrics without downloads or model inference")
+    parser.add_argument("--corpus", type=Path, help="Downloaded corpus path (default: OUTPUT/corpus.json)")
     parser.add_argument("--anonymize", action="store_true", help="Include Presidio placeholder replacement in inference timing")
     parser.add_argument("--limit", type=int)
     parser.add_argument("--repeats", type=int, default=1)
     args = parser.parse_args()
+    if args.rescore:
+        if args.system or args.output:
+            parser.error("Use --rescore on its own, without --system or --output")
+        print(json.dumps(rescore_saved_results(args.rescore)["useful_records"], indent=2))
+        return
+    if not args.system or not args.output:
+        parser.error("--system and --output are required for a new run")
     if args.repeats < 1:
         parser.error("--repeats must be positive")
     if args.output.exists():
@@ -74,7 +116,7 @@ def main():
     # Always fetch pinned bytes, validating any local cache against the pinned source.
     with urllib.request.urlopen(URL, timeout=60) as response:
         raw = response.read()
-    args.corpus.write_bytes(raw)
+    (args.corpus or args.output / "corpus.json").write_bytes(raw)
     grouped = json.loads(raw)
     rows = [dict(row, topic=topic) for topic, group in grouped.items() for row in group]
     for row in rows:

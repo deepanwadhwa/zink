@@ -31,6 +31,9 @@ def main():
                    (path / "inference-rss-samples.jsonl").read_text().splitlines()]
         return statistics.median(samples)
     table = [
+        ["F4 (useful records)", f'{z["useful_records"]["f4"]:.4f}', f'{p["useful_records"]["f4"]:.4f}'],
+        ["Precision (useful records)", f'{z["useful_records"]["precision"]:.2%}', f'{p["useful_records"]["precision"]:.2%}'],
+        ["Recall (useful records)", f'{z["useful_records"]["recall"]:.2%}', f'{p["useful_records"]["recall"]:.2%}'],
         ["QIB exact target-span detection (useful)", rate(z, "useful_records", "exact"), rate(p, "useful_records", "exact")],
         ["Full QIB exact detection (all 1,750 records)", rate(z, "all_records", "exact"), rate(p, "all_records", "exact")],
         ["QIB complete target coverage (useful)", rate(z, "useful_records", "fully_covered"), rate(p, "useful_records", "fully_covered")],

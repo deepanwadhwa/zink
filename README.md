@@ -252,15 +252,14 @@ Zink leverages both the Faker library and the extensive training data from the G
 
 A [reproducible QIB comparison](benchmarks/QIB-COMPARISON.md) evaluates Zink
 and the GLiNER model used in Presidio's official integration example with the
-same semantic label prompts. It reports exact target detection, complete target
-coverage, CPU latency, throughput and process memory. QIB annotates one target
-per passage, so this evaluation does not establish ordinary precision or F4.
-The report records installation, downloads, configurations and per-topic results.
-The separate six-document fictional corpus is only a smoke test.
+same semantic label prompts. It reports micro-averaged F4, precision and recall,
+CPU latency, throughput and process memory. Scores use exact target boundaries:
+unmatched predictions count as false positives and missed targets as false negatives.
+The [methodology](benchmarks/QIB-METHODS.md) includes setup and reproduction commands.
 
 Here is a comparison of ZINK against other models on Quasi Identifier Benchmark ([QIB])(https://huggingface.co/datasets/deepanwa/QIB)
 
-These are the project's reported QIB results, not a head-to-head comparison with the redaction packages above. The new reproducible QIB comparison uses a different target-span/coverage protocol and does not reproduce these historical numbers; verify their original conditions before using them as evidence in a submission.
+These are the project's reported QIB results, not a head-to-head comparison with the redaction packages above. The new reproducible QIB comparison uses a separate exact-span scoring protocol and does not reproduce these historical numbers; verify their original conditions before using them as evidence in a submission.
 
 | Model                  | Overall Recall | Overall Precision | Overall F4_SCORE | True Positives (TP) | False Negatives (FN) | Total Redaction Markers |
 | :--------------------- | :------------- | :---------------- | :--------------- | :------------------ | :------------------- | :---------------------- |
