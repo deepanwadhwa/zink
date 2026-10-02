@@ -1,6 +1,10 @@
-Draft maintainer response — post after the changes are published
+Draft maintainer response
 
-Hi @kysolvik, thank you for the checks and for starting the editor search. I have prepared changes addressing the suggestions:
+Hi @kysolvik, thank you for the checks and for starting the editor search. I have published changes addressing the suggestions.
+
+**The benchmark results and comparison tables are here: [Zink vs. Microsoft Presidio on QIB](https://github.com/deepanwadhwa/zink/blob/main/benchmarks/QIB-COMPARISON.md).** The report covers installation and setup, model downloads, target-detection accuracy, speed, memory consumption, zero-shot detection and replacement capabilities. The [benchmark runner and recorded results](https://github.com/deepanwadhwa/zink/tree/main/benchmarks) are available alongside it for reproduction and inspection.
+
+The changes include:
 
 - Zink now warns at import if GLiNER or ONNX Runtime is unavailable, with CPU/GPU installation instructions. The base package remains importable, and inference still raises an actionable ImportError. I also removed global warning suppression that would otherwise hide this warning.
 - The README and installation docs explain that the first import downloads approximately 2 GB of model files and can take several minutes, with cache and offline guidance.
@@ -14,4 +18,4 @@ I also used OpenAI Codex in October 2026 to help implement these changes, write 
 
 The primary QIB run found 85.5% exact target detection for Zink and 80.2% for Presidio GLiNER; complete target coverage was 87.4% and 87.7%, respectively. Full-corpus detection plus replacement took 782.8 s and 160.5 s, with peak RSS about 4,193 MiB and 2,885 MiB. These are single CPU runs, not universal rankings. The full comparison documents setup, downloads, models, thresholds, prompt information and annotation limitations.
 
-Validation: the existing model-backed tests passed during this work; benchmark and dependency tests, Ruff and the final Sphinx build were checked separately. The existing long-text test exposes GLiNER truncation warnings now that global warning suppression is removed.
+Validation: all 39 local tests passed, and the GitHub Actions test matrix, Ruff and documentation build passed after the CI import-path fix. The existing long-text test exposes GLiNER truncation warnings now that global warning suppression is removed.
