@@ -20,7 +20,8 @@ this workflow.
      - Detection and anonymization framework with recognizers, NLP
        integrations and replacement operators.
      - Zink provides a single API around its default zero-shot model.
-       Presidio supports additional recognizers and operators.
+       Presidio supports additional recognizers and operators, including
+       GLiNER for zero-shot detection and custom synthetic replacements.
    * - `scrubadub <https://scrubadub.readthedocs.io/en/stable/>`_
      - Text cleaning with configurable detectors and postprocessors.
      - Zink passes the requested entity labels to its model during redaction.
@@ -29,5 +30,7 @@ this workflow.
      - Zink uses GLiNER for extraction and adds redaction, synthetic
        replacements and placeholder mapping.
 
-The package has no benchmark against the tools in this table. Test detection
-on samples from your data before using its output in a research workflow.
+See :doc:`benchmarks` for a QIB comparison against Presidio's documented GLiNER
+example. The configurations receive the same semantic labels but retain their
+own models and extraction defaults. Test detection on samples from your data
+before using its output in a research workflow.

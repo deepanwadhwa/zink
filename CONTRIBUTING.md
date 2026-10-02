@@ -10,17 +10,19 @@ Use Python 3.11 or newer. From a clone of this repository:
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -e '.[cpu]'
-python -m pip install pytest sphinx sphinx-rtd-theme
+python -m pip install pytest ruff sphinx sphinx-rtd-theme
 ```
 
 On Windows, activate the virtual environment with `.venv\Scripts\activate`.
 The CPU extra installs GLiNER and ONNX Runtime. The first import downloads the
-default model, so allow network access and enough disk space for it.
+default model (approximately 2 GB), so allow network access, several minutes
+for initialization, and extra disk space for dependencies and the cache.
 
 ## Checks
 
 ```bash
-pytest zink/tests
+ruff check .
+pytest tests zink/tests
 sphinx-build -b html -W --keep-going docs/source docs/build/html
 ```
 

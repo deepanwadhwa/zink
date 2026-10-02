@@ -1,0 +1,7 @@
+{
+  "repo": "urchade/gliner_multi_pii-v1",
+  "revision": "1fcf13e85f4eef5394e1fcd406cf2ca9ea82351d",
+  "snapshot_download_seconds": 36.47914633298933,
+  "snapshot_file_bytes": 1155905399,
+  "note": "Model prefetch only; dependent backbone/tokenizer downloads and package installation are excluded."
+}

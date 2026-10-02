@@ -1,10 +1,18 @@
+import concurrent.futures
+import warnings
+
 try:
     from gliner import GLiNER
+    import onnxruntime  # noqa: F401
 except ImportError:
     GLiNER = None
-import warnings
-import concurrent.futures
-warnings.filterwarnings("ignore")
+    warnings.warn(
+        "Zink inference dependencies are unavailable. Install 'zink[cpu]' or "
+        "'zink[gpu]' to use redaction and replacement. Base-package utilities "
+        "remain available.",
+        RuntimeWarning,
+        stacklevel=2,
+    )
 
 
 class EntityExtractor:

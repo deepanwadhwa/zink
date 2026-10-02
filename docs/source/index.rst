@@ -19,7 +19,11 @@ Zink requires Python 3.11 or newer. For CPU use, run:
 
 For a compatible CUDA environment, run ``pip install "zink[gpu]"`` instead.
 The model downloads when you first import Zink with an inference backend
-installed. Later runs use the cached model.
+installed. Allow approximately 2 GB for model files, extra disk space for
+dependencies and the cache, and several minutes for download and initialization.
+Later runs use the cached model. Initialize it before working offline. Importing
+the base package without inference dependencies emits a warning; install one
+of the extras above to run redaction or replacement.
 
 2. Redact text
 ~~~~~~~~~~~~~~
@@ -45,6 +49,7 @@ Next steps
   placeholders across texts.
 * :doc:`api` lists the functions, parameters and result fields.
 * :doc:`related-tools` compares Zink with other text redaction packages.
+* :doc:`benchmarks` reports a QIB comparison with Presidio's GLiNER integration.
 
 .. toctree::
    :hidden:
@@ -53,3 +58,4 @@ Next steps
    tutorial
    api
    related-tools
+   benchmarks

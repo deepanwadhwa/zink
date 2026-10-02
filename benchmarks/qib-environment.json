@@ -1,0 +1,53 @@
+{
+  "hardware": {
+    "hw.model": "Mac15,12",
+    "hw.memsize": "17179869184",
+    "hw.physicalcpu": "8",
+    "hw.logicalcpu": "8",
+    "machdep.cpu.brand_string": "Apple M3"
+  },
+  "model_cache": [
+    {
+      "repo_id": "deepanwa/NuNerZero_onnx",
+      "cache_bytes": 1860968687,
+      "revisions": [
+        "40349bb15d985ced384bed5c35115fd70069f4b9"
+      ]
+    }
+  ],
+  "note": "Hardware captured during QIB run; cached revisions listed, no fresh download timing measured.",
+  "installed_directory_kib": {
+    "en_core_web_lg": 436828,
+    "torch": 569220,
+    "gliner": 2412,
+    "onnxruntime": 77616,
+    "presidio_analyzer": 2164,
+    "presidio_anonymizer": 356
+  },
+  "disk_measurement": "du -sk on package directories; excludes other dependencies and caches; allocated KiB, not compressed downloads",
+  "presidio_gliner_cache": [
+    {
+      "repo_id": "urchade/gliner_multi_pii-v1",
+      "cache_bytes": 1155905399,
+      "revisions": [
+        "1fcf13e85f4eef5394e1fcd406cf2ca9ea82351d"
+      ]
+    }
+  ],
+  "inference_resident_samples": {
+    "zink": {
+      "sample_count": 700,
+      "median_mib": 3035.109375,
+      "min_mib": 1369.21875,
+      "max_mib": 3035.84375,
+      "note": "ps rss sampled once per second after initialization; can include shutdown samples. Not a steady-state allocation measurement."
+    },
+    "presidio-gliner": {
+      "sample_count": 150,
+      "median_mib": 2106.390625,
+      "min_mib": 1844.515625,
+      "max_mib": 2110.640625,
+      "note": "ps rss sampled once per second after initialization; can include shutdown samples. Not a steady-state allocation measurement."
+    }
+  }
+}

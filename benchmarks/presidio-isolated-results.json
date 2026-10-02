@@ -1,0 +1,37 @@
+{
+  "python": "3.13.13",
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "corpus_sha256": "27c8bf249d294ba37b6b9f93368e16dcbf3aae69630a6d1f9fac9333325d87ef",
+  "documents": 6,
+  "versions": {
+    "presidio-analyzer": "2.2.364",
+    "spacy": "3.8.16",
+    "en-core-web-lg": "3.8.0"
+  },
+  "system": "presidio",
+  "repeats": 5,
+  "setup_seconds": 10.255380542002968,
+  "baseline_peak_rss_mib": 25.328125,
+  "setup_peak_rss_mib": 1052.609375,
+  "results": {
+    "tp": 11,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f4": 1.0,
+    "seconds_per_corpus": [
+      0.060740332992281765,
+      0.057222292001824826,
+      0.05700091700418852,
+      0.05672654099180363,
+      0.05690395800047554
+    ],
+    "median_seconds": 0.05700091700418852,
+    "min_seconds": 0.05672654099180363,
+    "max_seconds": 0.060740332992281765,
+    "documents_per_second": 105.2614644701086,
+    "characters_per_second": 4912.201675271735,
+    "process_peak_rss_mib": 1055.28125
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "python": "3.13.13",
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "corpus_sha256": "27c8bf249d294ba37b6b9f93368e16dcbf3aae69630a6d1f9fac9333325d87ef",
+  "documents": 6,
+  "versions": {
+    "zink": "0.7.0",
+    "gliner": "0.2.29",
+    "onnxruntime": "1.30.0",
+    "presidio-analyzer": "2.2.364",
+    "spacy": "3.8.16",
+    "en-core-web-lg": "3.8.0"
+  },
+  "setup_seconds": {
+    "zink": 21.538302416010993,
+    "presidio": 1.2444178339937935
+  },
+  "results": {
+    "zink": {
+      "tp": 11,
+      "fp": 1,
+      "fn": 0,
+      "precision": 0.9166666666666666,
+      "recall": 1.0,
+      "f4": 0.9946808510638298,
+      "seconds": 2.5991588329925435,
+      "documents_per_second": 2.3084391472497643
+    },
+    "presidio": {
+      "tp": 11,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f4": 1.0,
+      "seconds": 0.08556629199301824,
+      "documents_per_second": 70.121070578699
+    }
+  }
+}

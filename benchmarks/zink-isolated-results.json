@@ -1,0 +1,39 @@
+{
+  "python": "3.13.13",
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "corpus_sha256": "27c8bf249d294ba37b6b9f93368e16dcbf3aae69630a6d1f9fac9333325d87ef",
+  "documents": 6,
+  "versions": {
+    "zink": "0.7.0",
+    "gliner": "0.2.29",
+    "onnxruntime": "1.30.0",
+    "torch": "2.14.1",
+    "transformers": "5.16.1"
+  },
+  "system": "zink",
+  "repeats": 5,
+  "setup_seconds": 6.862270375000662,
+  "baseline_peak_rss_mib": 25.328125,
+  "setup_peak_rss_mib": 4164.59375,
+  "results": {
+    "tp": 11,
+    "fp": 1,
+    "fn": 0,
+    "precision": 0.9166666666666666,
+    "recall": 1.0,
+    "f4": 0.9946808510638298,
+    "seconds_per_corpus": [
+      2.2068522079935065,
+      2.2018455420038663,
+      3.1090262080106186,
+      3.767155499997898,
+      2.6853906250034925
+    ],
+    "median_seconds": 2.6853906250034925,
+    "min_seconds": 2.2018455420038663,
+    "max_seconds": 3.767155499997898,
+    "documents_per_second": 2.2343118145026652,
+    "characters_per_second": 104.26788467679106,
+    "process_peak_rss_mib": 4164.59375
+  }
+}

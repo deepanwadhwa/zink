@@ -1,0 +1,10 @@
+{
+  "version": "2.2.364",
+  "input": "Alice lives in Boston.",
+  "observed": {
+    "default_placeholders": "<PERSON> lives in <LOCATION>.",
+    "fixed_values": "Participant A lives in City X.",
+    "faker_custom": "Noah Rhodes lives in North Judithbury."
+  },
+  "note": "Replacement operators verified on manually supplied spans; detector accuracy is evaluated separately."
+}

@@ -1,6 +1,4 @@
 # pipeline.py
-import warnings
-warnings.filterwarnings("ignore")
 import random
 import json
 import os
@@ -26,7 +24,7 @@ class Pseudonymizer:
         """Plain extraction & merging (uncached)."""
         if self.extractor.model is None:
              raise ImportError(
-                "The 'gliner' package is required for extraction but is not installed. "
+                "GLiNER and ONNX Runtime are required for extraction but are unavailable. "
                 "Please install it with 'pip install zink[cpu]' or 'pip install zink[gpu]'."
             )
         raw_ents = self.extractor.predict2(text, labels=categories)
@@ -41,7 +39,7 @@ class Pseudonymizer:
 
         if self.extractor.model is None:
              raise ImportError(
-                "The 'gliner' package is required for extraction but is not installed. "
+                "GLiNER and ONNX Runtime are required for extraction but are unavailable. "
                 "Please install it with 'pip install zink[cpu]' or 'pip install zink[gpu]'."
             )
         raw_ents = self.extractor.predict2(text, labels=categories_tuple)
@@ -57,7 +55,7 @@ class Pseudonymizer:
         """
         if self.extractor.model is None:
              raise ImportError(
-                "The 'gliner' package is required for extraction but is not installed. "
+                "GLiNER and ONNX Runtime are required for extraction but are unavailable. "
                 "Please install it with 'pip install zink[cpu]' or 'pip install zink[gpu]'."
             )
         all_ents = extract_entities_in_parallel(

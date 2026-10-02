@@ -89,3 +89,45 @@ text through this file.
 For automation, see :func:`zink.shield` in the :doc:`api`. It restores original
 text in a decorated function's string response, so that response is sensitive
 again and must be handled accordingly.
+
+5. Process a folder of text files
+---------------------------------
+
+Save fictional notes as UTF-8 ``.txt`` files in ``notes/``. This sequential
+workflow reads one file at a time and writes transformed text to a separate
+folder. It never overwrites an input file and refuses to overwrite an existing
+output. Keep output private until you have reviewed every file.
+
+.. code-block:: python
+
+   from pathlib import Path
+   import zink
+
+   source = Path("notes")
+   destination = Path("redacted_notes")
+   destination.mkdir(exist_ok=True)
+   labels = ("person", "company", "location", "date")
+
+   for path in sorted(source.glob("*.txt")):
+       text = path.read_text(encoding="utf-8")
+       result = zink.redact(text, categories=labels, use_cache=False)
+       with (destination / path.name).open("x", encoding="utf-8") as output:
+           output.write(result.anonymized_text)
+       print(path.name, result.features["num_replacements"])
+
+For example, ``notes/interview_01.txt`` might contain::
+
+   Alice works at Acme in Boston. The interview was on June 12, 2025.
+
+The transformed file contains placeholders for detected spans. Predictions
+vary; a successful script exit does not establish that all sensitive text was
+removed. ``use_cache=False`` avoids retaining extraction results for each file
+in the pipeline cache. The result object still contains the original text and
+detected values, so this example writes only ``anonymized_text``.
+
+Files longer than the model's context may lose detections. For long documents,
+split on paragraph boundaries and review the resulting sections. Avoid splitting
+names or other entities across sections. The example uses sequential calls;
+do not share Zink's default extractor across concurrent file-processing threads.
+To keep stable placeholders across files, add ``numbered_entities=True`` and
+protect the mapping file as described above.

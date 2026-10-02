@@ -1,0 +1,6 @@
+{"text": "Alice Johnson visited Boston on June 12, 2025.", "entities": [{"start": 0, "end": 13, "label": "person"}, {"start": 22, "end": 28, "label": "location"}, {"start": 32, "end": 45, "label": "date"}]}
+{"text": "The interview with David Smith took place in London.", "entities": [{"start": 19, "end": 30, "label": "person"}, {"start": 45, "end": 51, "label": "location"}]}
+{"text": "Maria Garcia moved to Paris in March 2024.", "entities": [{"start": 0, "end": 12, "label": "person"}, {"start": 22, "end": 27, "label": "location"}, {"start": 31, "end": 41, "label": "date"}]}
+{"text": "The weather was pleasant during the interview.", "entities": []}
+{"text": "Please review the anonymized notes before sharing.", "entities": []}
+{"text": "Robert Brown and Sarah Wilson met in Berlin.", "entities": [{"start": 0, "end": 12, "label": "person"}, {"start": 17, "end": 29, "label": "person"}, {"start": 37, "end": 43, "label": "location"}]}

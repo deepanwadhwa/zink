@@ -47,6 +47,13 @@ pip install "zink[cpu]"
 pip install "zink[gpu]"
 ```
 
+> **First import:** With a CPU or GPU backend installed, importing Zink downloads
+> approximately 2 GB of model files from Hugging Face and loads the model. This
+> can take several minutes, depending on your connection and hardware. Allow
+> extra disk space for dependencies and the cache. Later imports reuse the cache;
+> download and initialize the model before working offline. Installing bare
+> `zink` emits a warning at import; inference requires the CPU or GPU extra.
+
 ## Quick Start
 
 Get started with ZINK in just a few lines of code. The `redact` function replaces identified entities with `[LABEL]_REDACTED`.
@@ -243,9 +250,17 @@ Zink leverages both the Faker library and the extensive training data from the G
 
 ## Benchmarks
 
+A [reproducible QIB comparison](benchmarks/QIB-COMPARISON.md) evaluates Zink
+and the GLiNER model used in Presidio's official integration example with the
+same semantic label prompts. It reports exact target detection, complete target
+coverage, CPU latency, throughput and process memory. QIB annotates one target
+per passage, so this evaluation does not establish ordinary precision or F4.
+The report records installation, downloads, configurations and per-topic results.
+The separate six-document fictional corpus is only a smoke test.
+
 Here is a comparison of ZINK against other models on Quasi Identifier Benchmark ([QIB])(https://huggingface.co/datasets/deepanwa/QIB)
 
-These are the project's reported QIB results, not a head-to-head comparison with the redaction packages above. Evaluation scripts and a reproducible protocol are not included in this repository; verify the numbers and conditions before using them as evidence in a submission.
+These are the project's reported QIB results, not a head-to-head comparison with the redaction packages above. The new reproducible QIB comparison uses a different target-span/coverage protocol and does not reproduce these historical numbers; verify their original conditions before using them as evidence in a submission.
 
 | Model                  | Overall Recall | Overall Precision | Overall F4_SCORE | True Positives (TP) | False Negatives (FN) | Total Redaction Markers |
 | :--------------------- | :------------- | :---------------- | :--------------- | :------------------ | :------------------- | :---------------------- |

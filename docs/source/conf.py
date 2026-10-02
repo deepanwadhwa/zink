@@ -12,4 +12,4 @@ html_theme = "sphinx_rtd_theme"
 language = "en"
 
 # Documentation imports the base package only; model inference is not needed.
-autodoc_mock_imports = ["gliner"]
+autodoc_mock_imports = ["gliner", "onnxruntime"]
