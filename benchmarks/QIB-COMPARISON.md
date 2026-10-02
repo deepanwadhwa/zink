@@ -4,22 +4,23 @@ Compared on [QIB](https://huggingface.co/datasets/deepanwa/QIB), using each tool
 
 | Comparison | Zink | Presidio + GLiNER |
 | --- | --- | --- |
-| Model | NuNerZero (ONNX) | gliner_multi_pii-v1 (PyTorch) |
+| Detection model / CPU backend | NuNerZero / ONNX Runtime | `urchade/gliner_multi_pii-v1` / PyTorch |
 | **F4 score¹** | **0.8520** | 0.7906 |
 | Precision¹ | **81.16%** | 64.22% |
 | Recall¹ | **85.47%** | 80.22% |
 | Median time per passage, including replacement | 443 ms | **92 ms** |
 | Total time for 1,750 passages | 783 s | **160 s** |
 | Peak process memory | 4.1 GiB | **2.8 GiB** |
-| Cached model setup | **6.7 s** | 14.8 s |
+| Startup with model already downloaded | **6.7 s** | 14.8 s |
 | Model download | About 1.86 GB | About 1.16 GB + spaCy model |
-| CPU setup | Install `zink[cpu]` | Install analyzer with GLiNER, anonymizer and spaCy model; configure recognizer |
-| Zero-shot detection with custom labels | Yes | Yes, through GLiNER integration |
-| Redaction and fixed replacements | Built in | Separate anonymizer package |
-| Synthetic replacements | Built-in Faker workflow | Custom operator, e.g. Faker |
-| Persistent numbered placeholders | Built-in JSON mapping | Custom operator; application saves mapping |
-| Masking, hashing and encryption | No built-in operators | Built-in anonymizer operators |
-| Local inference after download | Yes | Yes |
+| Installation | `pip install "zink[cpu]"` | `pip install "presidio-analyzer[gliner]" presidio-anonymizer`; download `en_core_web_sm` |
+| Configuration after installation | Supply labels to Zink’s API | Configure `GLiNERRecognizer`, label mapping and `AnonymizerEngine` |
+| Detect a user-supplied type, e.g. “pet name” | Pass the label directly | Register the label in the GLiNER recognizer’s mapping |
+| Replace detected names with placeholders | `redact()` → `person_REDACTED` | `AnonymizerEngine.anonymize()` → `<PERSON>` |
+| Replace with your own values | `replace_with_my_data()` accepts replacement lists by label | Configure `replace` with a fixed value per entity type; lists need custom code |
+| Replace with generated names / places | `replace()` generates values using Faker and category data | Supply a custom replacement function, e.g. one calling Faker |
+| Reuse the same numbered placeholder across documents | `redact(numbered_entities=True)` saves and reloads a JSON mapping | Implement a mapping operator and save/reload its mapping in application code |
+| Network needed for inference after models are downloaded | No | No |
 
 Zink achieved higher F4, precision and recall. Presidio was about **4.9× faster** and used less memory.
 
