@@ -10,21 +10,6 @@
 </div>
 ZINK is a Python package designed for zero-shot anonymization of entities within unstructured text data. It allows you to redact or replace sensitive information based on specified entity labels.
 
-Zink predicts entity spans using a GLiNER based model. Predictions can miss sensitive text, so review results before releasing research data. Numbered redaction keeps original values in a local mapping file and is pseudonymization rather than irreversible anonymization.
-
-## How Zink fits among related tools
-
-Zink combines user supplied entity labels with redaction, synthetic replacement, and persistent placeholder mapping in one Python API. It uses GLiNER for extraction rather than introducing a new recognition model.
-
-| Tool | Main focus | Difference for a researcher |
-| --- | --- | --- |
-| [PyRedactKit](https://github.com/brootware/PyRedactKit) | CLI redaction for built-in patterns and custom regular expressions | Zink can request semantic entity types at inference time; PyRedactKit is useful for known patterns in files. |
-| [Microsoft Presidio](https://microsoft.github.io/presidio/) | Extensible PII detection and anonymization framework | Presidio has a broader set of recognizers and operators, including ML integrations. Zink provides a compact workflow around a default zero-shot model. |
-| [scrubadub](https://scrubadub.readthedocs.io/en/stable/) | Text cleaning using configurable detectors | Zink exposes arbitrary label prompts to its entity model in the redaction call. |
-| [GLiNER](https://github.com/urchade/GLiNER) | Zero-shot entity extraction | Zink builds on GLiNER and adds redaction, replacements, and mapping. |
-
-See the [full comparison](https://zink.readthedocs.io/en/latest/related-tools.html). These are workflow differences; no head-to-head performance claim is made.
-
 ### Abstract
 
 The proliferation of Large Language Models (LLMs) heightens challenges in protecting Personal Identifiable Information (PII), particularly Quasi-Identifiers (QIs), in unstructured text. QIs enable re-identification when combined and pose significant privacy risks, highlighted by their use in security verification. Current approaches face limitations: large LLMs offer flexibility for detecting diverse QIs but are often hindered by high computational costs, while traditional supervised NER models require domain-specific labeled data and fail to generalize to heterogeneous, unseen QI types. Furthermore, evaluating QI identification methods is hampered by the lack of diverse benchmarks. To address this need for evaluation resources, we present the Quasi-Identifier Benchmark (QIB), a new corpus with 1750 examples across 35 diverse QI categories (e.g., personal preferences, security answers) designed to assess model robustness against QI heterogeneity. To facilitate the application of flexible identification methods on such diverse data, we also introduce ZINK (Zero-shot INK), a Python package providing a unified framework for applying existing zero-shot NER models to QI identification and anonymization, simplifying model integration and offering configurable redaction and replacement.
