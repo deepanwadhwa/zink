@@ -18,12 +18,13 @@ Zink requires Python 3.11 or newer. For CPU use, run:
    pip install "zink[cpu]"
 
 For a compatible CUDA environment, run ``pip install "zink[gpu]"`` instead.
-The model downloads when you first import Zink with an inference backend
-installed. Allow approximately 2 GB for model files, extra disk space for
-dependencies and the cache, and several minutes for download and initialization.
-Later runs use the cached model. Initialize it before working offline. Importing
-the base package without inference dependencies emits a warning; install one
-of the extras above to run redaction or replacement.
+The first inference downloads the default model when it is absent from the
+local cache. Allow approximately 2 GB for the model files, extra disk space
+for dependencies, and several minutes for download and initialization. Run
+a redaction example before going offline so the model is cached. The model
+is pinned to a specific revision so subsequent installations use the same
+files. Importing the base package without inference dependencies emits a
+warning. Install one of the extras above for redaction or replacement.
 
 2. Redact text
 ~~~~~~~~~~~~~~

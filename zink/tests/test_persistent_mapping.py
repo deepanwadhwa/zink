@@ -1,133 +1,127 @@
-import os
 import json
-import tempfile
+from pathlib import Path
+
 import pytest
-from unittest.mock import patch
+
 import zink as zn
+from zink.utils.paths import get_default_mapping_path
+
 
 @pytest.fixture
-def mock_mapping_file():
-    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
-        mapping_file = tmp.name
-    
-    # Patch the path in all places where it is imported
-    with patch('zink.zink.get_default_mapping_path', return_value=mapping_file), \
-         patch('zink.pipeline.get_default_mapping_path', return_value=mapping_file), \
-         patch('zink.utils.paths.get_default_mapping_path', return_value=mapping_file):
-        yield mapping_file
-        
-    if os.path.exists(mapping_file):
-        os.remove(mapping_file)
+def mapping_file(tmp_path):
+    return tmp_path / "mapping.json"
 
-def test_persistent_mapping_consistency(mock_mapping_file):
-    """
-    Verifies that using implicit mapping ensures consistent redaction across calls.
-    """
-    mapping_file = mock_mapping_file
-    
-    text1 = "My name is Alice and I work at Google."
-    
-    # First call: should generate new IDs and save to mapping file
-    result1 = zn.redact(text1, categories=["person", "company"], numbered_entities=True)
-    anonymized1 = result1.anonymized_text
-    
-    assert "person_" in anonymized1
-    assert "company_" in anonymized1
-    
-    # Verify mapping file exists and has content
-    assert os.path.exists(mapping_file)
-    with open(mapping_file, 'r') as f:
-        mapping = json.load(f)
-        assert "person" in mapping
-        assert "Alice" in mapping["person"]
-        assert "company" in mapping
-        assert "Google" in mapping["company"]
-        
-    # Second call: same text, should produce IDENTICAL output
-    result2 = zn.redact(text1, categories=["person", "company"], numbered_entities=True)
-    anonymized2 = result2.anonymized_text
-    
-    assert anonymized1 == anonymized2
-    
-    # Third call: new text with SAME entities, should use SAME IDs
-    text2 = "Alice is a great engineer at Google."
-    result3 = zn.redact(text2, categories=["person", "company"], numbered_entities=True)
-    anonymized3 = result3.anonymized_text
-    
-    # Extract the IDs used in result1
+
+@pytest.mark.integration
+def test_persistent_mapping_consistency(mapping_file):
+    text = "My name is Alice and I work at Google."
+    labels = ["person", "company"]
+
+    first = zn.redact(text, categories=labels, numbered_entities=True)
+    assert "person_" in first.anonymized_text
+    assert "company_" in first.anonymized_text
+    mapping = json.loads(mapping_file.read_text(encoding="utf-8"))
+    assert "Alice" in mapping["person"]
+    assert "Google" in mapping["company"]
+
+    repeated = zn.redact(text, categories=labels, numbered_entities=True)
+    assert first.anonymized_text == repeated.anonymized_text
+
+    changed = zn.redact(
+        "Alice is a great engineer at Google.",
+        categories=labels,
+        numbered_entities=True,
+    )
     alice_id = mapping["person"]["Alice"]
     google_id = mapping["company"]["Google"]
-    
-    assert f"person_{alice_id}_REDACTED" in anonymized3
-    assert f"company_{google_id}_REDACTED" in anonymized3
+    assert f"person_{alice_id}_REDACTED" in changed.anonymized_text
+    assert f"company_{google_id}_REDACTED" in changed.anonymized_text
 
-def test_persistent_mapping_new_entities(mock_mapping_file):
-    """
-    Verifies that new entities are added to the existing mapping file.
-    """
-    mapping_file = mock_mapping_file
-    
-    # 1. Redact Alice
+
+@pytest.mark.integration
+def test_persistent_mapping_new_entities(mapping_file):
     zn.redact("Alice is here.", categories=["person"], numbered_entities=True)
-    
-    with open(mapping_file, 'r') as f:
-        mapping = json.load(f)
-        assert "Alice" in mapping["person"]
-        assert "Bob" not in mapping.get("person", {})
-        
-    # 2. Redact Bob (new entity)
-    zn.redact("Bob is here.", categories=["person"], numbered_entities=True)
-    
-    with open(mapping_file, 'r') as f:
-        mapping = json.load(f)
-        assert "Alice" in mapping["person"]
-        assert "Bob" in mapping["person"]
+    before = json.loads(mapping_file.read_text(encoding="utf-8"))
+    assert set(before["person"]) == {"Alice"}
 
-def test_shield_with_implicit_mapping(mock_mapping_file):
-    """
-    Verifies that @zn.shield works with implicit mapping.
-    """
-    mapping_file = mock_mapping_file
-        
-    @zn.shield(target_arg='prompt', labels=('person',))
+    zn.redact("Bob is here.", categories=["person"], numbered_entities=True)
+    after = json.loads(mapping_file.read_text(encoding="utf-8"))
+    assert set(after["person"]) == {"Alice", "Bob"}
+    assert after["person"]["Alice"] == before["person"]["Alice"]
+    assert after["person"]["Bob"] != after["person"]["Alice"]
+
+
+@pytest.mark.integration
+def test_shield_with_implicit_mapping(mapping_file):
+    @zn.shield(target_arg="prompt", labels=("person",))
     def echo(prompt):
         return prompt
-        
-    # 1. Call with Alice
-    out1 = echo(prompt="Alice is calling.")
-    
-    assert out1 == "Alice is calling."
-    
-    with open(mapping_file, 'r') as f:
-        mapping = json.load(f)
-        assert "Alice" in mapping["person"]
-        alice_id = mapping["person"]["Alice"]
-        
-    # 2. Call with Alice again
-    out2 = echo(prompt="Alice again.")
-    assert out2 == "Alice again."
-    
-    # Verify mapping didn't change (ID should be same)
-    with open(mapping_file, 'r') as f:
-        mapping = json.load(f)
-        assert mapping["person"]["Alice"] == alice_id
 
-def test_refresh_mapping_file(mock_mapping_file):
-    """
-    Verifies that refresh_mapping_file deletes the mapping file.
-    """
-    mapping_file = mock_mapping_file
-    
-    # Create file by redacting something
+    assert echo(prompt="Alice is calling.") == "Alice is calling."
+    before = json.loads(mapping_file.read_text(encoding="utf-8"))
+    assert "Alice" in before["person"]
+
+    assert echo(prompt="Alice again.") == "Alice again."
+    after = json.loads(mapping_file.read_text(encoding="utf-8"))
+    assert before["person"]["Alice"] == after["person"]["Alice"]
+
+
+@pytest.mark.integration
+def test_refresh_mapping_file(mapping_file):
     zn.redact("Alice is here.", categories=["person"], numbered_entities=True)
-    assert os.path.exists(mapping_file)
-    
-    # Refresh
-    zn.refresh_mapping_file()
-    assert not os.path.exists(mapping_file)
+    assert mapping_file.is_file()
 
-def test_where_mapping_file(mock_mapping_file):
-    """
-    Verifies where_mapping_file returns the correct path.
-    """
-    assert zn.where_mapping_file() == mock_mapping_file
+    zn.refresh_mapping_file()
+
+    assert not mapping_file.exists()
+
+
+def test_mapping_reset_is_idempotent(mapping_file):
+    mapping_file.write_text('{"person": {"Alice": "1234"}}', encoding="utf-8")
+
+    zn.refresh_mapping_file()
+    zn.refresh_mapping_file()
+
+    assert not mapping_file.exists()
+
+
+def test_where_mapping_file(monkeypatch, tmp_path):
+    monkeypatch.setattr("zink.zink.get_default_mapping_path", get_default_mapping_path)
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
+
+    path = Path(zn.where_mapping_file())
+
+    assert path == tmp_path / ".zink" / "mapping.json"
+    assert path.parent.is_dir()
+    assert not path.exists()
+
+
+def test_fresh_pipeline_reuses_numbered_mapping(fake_extractor, mapping_file):
+    def predict(text, labels):
+        assert tuple(labels) == ("person",)
+        entities = []
+        for name in ("Alice", "Bob"):
+            if name in text:
+                start = text.index(name)
+                entities.append(
+                    {
+                        "start": start,
+                        "end": start + len(name),
+                        "text": name,
+                        "label": "person",
+                        "score": 0.9,
+                    }
+                )
+        return entities
+
+    original_pipeline = fake_extractor(predict)
+    first = zn.redact("Alice arrived.", ("person",), numbered_entities=True)
+    new_pipeline = fake_extractor(predict)
+    assert new_pipeline is not original_pipeline
+    second = zn.redact("Alice called Bob.", ("person",), numbered_entities=True)
+
+    alice, bob = second.replacements
+    assert alice.pseudonym == first.replacements[0].pseudonym
+    assert bob.pseudonym != alice.pseudonym
+    stored = json.loads(mapping_file.read_text(encoding="utf-8"))
+    assert set(stored["person"]) == {"Alice", "Bob"}
