@@ -1,94 +1,72 @@
 import random
+
 from .rfakerjson import FakerOrJsonReplacementStrategy
 
 
 class EntityReplacer:
-    def __init__(self, use_json_mapping=False):
-        """
-        Initialize the EntityReplacer.
-        Parameters:
-            use_json_mapping: If True, JSON mapping is used as a fallback when Faker cannot produce a value.
+    """Apply pseudonyms at detected spans in the original input."""
 
-        """
+    def __init__(self, use_json_mapping=False):
         self.use_json_mapping = use_json_mapping
 
     def replace_entities_ensure_consistency(
         self, entities, text, user_replacements=None
     ):
+        """Replace detected spans, reusing one pseudonym per source string per call.
+
+        Entities must be ordered by start offset and must not overlap. The first
+        detected occurrence of a source string chooses its replacement. Each
+        entity's dictionary receives the source of the applied replacement.
+        A missing or unchanged replacement falls back to `<label>_REDACTED`.
         """
-        Replace entities in the text with pseudonyms, ensuring consistent replacements.
-
-        Parameters:
-            entities (list of dict): A list of dictionaries, each containing 'start', 'end', 'label', and 'text'.
-            text (str): The original text.
-            user_replacements (dict, ): A dictionary of user-defined replacements for specific entity labels.
-                If provided, these will override the JSON-based mappings.
-        Returns:
-            str: The text with entities replaced by pseudonyms.
-        """
-        # Initialize user_replacements as an empty dictionary.
-        self.user_replacements = {}
-        if user_replacements:
-            for label, replacement in user_replacements.items():
-                self.user_replacements[label.lower()] = replacement
-
-        replacements = {}
-        for ent in entities:
-            if ent["text"] not in replacements:
-                label = ent["label"].lower()
-                if label in self.user_replacements:
-                    fixed = self.user_replacements[label]
-                    replacement = (
-                        random.choice(fixed) if isinstance(fixed, list) else fixed
-                    )
-                    source = "user"
-                else:
-                    replacement, source = FakerOrJsonReplacementStrategy(
-                        label, self.use_json_mapping
-                    ).replace(ent)
-                ent["source"] = source  # Record the source in the entity.
-                replacements[ent["text"]] = replacement
-
-        for key, value in replacements.items():
-            text = text.replace(key, value)
-        return text
+        return self._replace(entities, text, user_replacements, ensure_consistency=True)
 
     def replace_entities(self, entities, text, user_replacements=None):
-        """
-        Replace entities in the text with pseudonyms, with randomized replacements.
-        
-        Parameters:
-            entities (list of dict): A list of dictionaries, each containing 'start', 'end', 'label', and 'text'.
-            text (str): The original text.
-            user_replacements (dict, ): A dictionary of user-defined replacements for specific entity labels.
-                If provided, these will override the JSON-based mappings.
-        
-        Returns:
-            str: The text with entities replaced by pseudonyms.
-        """
-        self.user_replacements = {}
-        if user_replacements:
-            for label, replacement in user_replacements.items():
-                self.user_replacements[label.lower()] = replacement
+        """Replace detected spans, choosing the pseudonym independently for each.
 
-        new_text = ""
-        last_index = 0
+        The span requirements, source metadata and redaction fallback match
+        :meth:`replace_entities_ensure_consistency`.
+        """
+        return self._replace(
+            entities, text, user_replacements, ensure_consistency=False
+        )
+
+    def _replace(self, entities, text, user_replacements, *, ensure_consistency):
+        user_replacements = {
+            label.lower(): value for label, value in (user_replacements or {}).items()
+        }
+        replacements = {}
+        parts = []
+        previous_end = 0
         for entity in entities:
-            new_text += text[last_index : entity["start"]]
-            label = entity["label"].lower()
-            if label in self.user_replacements:
-                fixed = self.user_replacements[label]
-                replacement = random.choice(fixed) if isinstance(fixed, list) else fixed
-                source = "user"
+            original = entity["text"]
+            if ensure_consistency and original in replacements:
+                replacement, source = replacements[original]
             else:
-                replacement, source = FakerOrJsonReplacementStrategy(
-                    label, self.use_json_mapping
-                ).replace(entity)
-            if replacement is None or replacement == entity["text"]:
-                replacement = label+"_REDACTED"
-                source = "redaction"
-            entity["source"] = source  # Record the source in the entity.
-            new_text += replacement
-            last_index = entity["end"]
-        new_text += text[last_index:]
-        return new_text
+                replacement, source = self._choose_replacement(
+                    entity, user_replacements
+                )
+                if ensure_consistency:
+                    replacements[original] = replacement, source
+
+            parts.extend((text[previous_end : entity["start"]], replacement))
+            entity["source"] = source
+            previous_end = entity["end"]
+
+        parts.append(text[previous_end:])
+        return "".join(parts)
+
+    def _choose_replacement(self, entity, user_replacements):
+        label = entity["label"].lower()
+        if label in user_replacements:
+            fixed = user_replacements[label]
+            replacement = random.choice(fixed) if isinstance(fixed, list) else fixed
+            source = "user"
+        else:
+            replacement, source = FakerOrJsonReplacementStrategy(
+                label, self.use_json_mapping
+            ).replace(entity)
+
+        if replacement is None or replacement == entity["text"]:
+            return f"{label}_REDACTED", "redaction"
+        return replacement, source
