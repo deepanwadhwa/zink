@@ -49,11 +49,13 @@ class PersonReplacementStrategy(ReplacementStrategy):
                 # Single token scenario
                 for _ in range(10):
                     fake_value = self.faker.first_name()  # single first name
-                    if list(original_tokens)[0].lower() not in fake_value.lower() or fake_value.lower() not in list(original_tokens)[0].lower():
+                    if (
+                        list(original_tokens)[0].lower() not in fake_value.lower()
+                        or fake_value.lower() not in list(original_tokens)[0].lower()
+                    ):
                         return fake_value
                 # Fallback
                 return f"[{original_label}_REDACTED]"
 
         # If no name recognized or no fallback, redact
         return f"[{original_label}_REDACTED]"
-

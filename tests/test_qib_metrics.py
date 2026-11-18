@@ -6,7 +6,9 @@ import json
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "benchmarks"))
-spec = importlib.util.spec_from_file_location("qib_runner", "benchmarks/qib_presidio.py")
+spec = importlib.util.spec_from_file_location(
+    "qib_runner", "benchmarks/qib_presidio.py"
+)
 runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
 
@@ -33,10 +35,14 @@ def test_union_coverage_and_empty_predictions():
 
 
 def test_emphasis_normalization_updates_gold_offsets():
-    text = 'Visit *Paris* tomorrow.'
-    start = text.index('Paris')
-    row = {"passage": text, "entity_start": start, "entity_end": start + 5,
-           "ground_truth_entity": "Paris"}
+    text = "Visit *Paris* tomorrow."
+    start = text.index("Paris")
+    row = {
+        "passage": text,
+        "entity_start": start,
+        "entity_end": start + 5,
+        "ground_truth_entity": "Paris",
+    }
     normalized = runner.normalize_emphasis(row)
     assert normalized["passage"] == "Visit Paris tomorrow."
     assert normalized["entity_start"] == 6
@@ -52,23 +58,42 @@ def test_micro_f4_counts_duplicates_boundary_errors_and_misses():
         runner.target_metrics(row, []),
     ]
     result = runner.summarize(records)
-    assert (result["true_positives"], result["false_positives"], result["false_negatives"]) == (1, 2, 2)
+    assert (
+        result["true_positives"],
+        result["false_positives"],
+        result["false_negatives"],
+    ) == (1, 2, 2)
     assert result["precision"] == pytest.approx(1 / 3)
     assert result["recall"] == pytest.approx(1 / 3)
     assert result["f4"] == pytest.approx(1 / 3)
     # An additional miss penalizes F4 more than an additional false positive.
     missed = runner.summarize(records + [runner.target_metrics(row, [])])
-    extra = runner.summarize([runner.target_metrics(row, [(3, 8, "X"), (10, 12, "X"), (14, 16, "X")])] + records[1:])
+    extra = runner.summarize(
+        [runner.target_metrics(row, [(3, 8, "X"), (10, 12, "X"), (14, 16, "X")])]
+        + records[1:]
+    )
     assert missed["f4"] < extra["f4"]
     assert runner.summarize([])["f4"] == 0
 
 
 def test_rescore_uses_saved_spans_and_preserves_timings(tmp_path):
-    original = {"system": "zink", "repeats": 1, "by_topic_useful": {"names": {}}, "median_seconds": 12.34}
+    original = {
+        "system": "zink",
+        "repeats": 1,
+        "by_topic_useful": {"names": {}},
+        "median_seconds": 12.34,
+    }
     path = tmp_path / "results.json"
     path.write_text(json.dumps(original))
-    record = {"target_start": 3, "target_end": 8, "predictions": [[3, 8, "person"]],
-              "useful": True, "mapped_presidio_type": "PERSON", "topic": "names", "exact": False}
+    record = {
+        "target_start": 3,
+        "target_end": 8,
+        "predictions": [[3, 8, "person"]],
+        "useful": True,
+        "mapped_presidio_type": "PERSON",
+        "topic": "names",
+        "exact": False,
+    }
     predictions = tmp_path / "predictions-1.jsonl"
     saved = json.dumps(record) + "\n"
     predictions.write_text(saved)

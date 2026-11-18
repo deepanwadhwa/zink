@@ -12,3 +12,14 @@ __pycache__/
 
 # Generated Sphinx output
 docs/build/
+
+# Test and distribution artifacts
+.pytest_cache/
+.coverage*
+coverage.xml
+htmlcov/
+build/
+dist/
+
+# Generated ONNX session metadata
+/:memory:.ses

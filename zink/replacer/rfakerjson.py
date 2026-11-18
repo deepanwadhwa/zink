@@ -7,8 +7,8 @@ from .rperson import PersonReplacementStrategy
 from .vars import COUNTRIES_SYNONYMS, human_entity_roles
 import random
 
-human_entity_roles = human_entity_roles + [x+"_name" for x in human_entity_roles]
-human_entity_roles = human_entity_roles + [x+" name" for x in human_entity_roles]
+human_entity_roles = human_entity_roles + [x + "_name" for x in human_entity_roles]
+human_entity_roles = human_entity_roles + [x + " name" for x in human_entity_roles]
 
 # Read country names from file.
 COUNTRY_NAMES = {
@@ -49,6 +49,7 @@ class FakerOrJsonReplacementStrategy:
 
     :type use_json_mapping: bool
     """
+
     def __init__(self, label, use_json_mapping):
         """
         Initializes the FakerOrJsonReplacementStrategy.
