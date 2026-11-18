@@ -1,0 +1,42 @@
+name: Build distributions
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  distributions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Build wheel and source archive
+        run: |
+          python -m pip install build
+          python -m build
+      - name: Verify independent wheel and source installs
+        shell: bash
+        run: |
+          version=$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          for archive in "$GITHUB_WORKSPACE/dist/zink-$version-py3-none-any.whl" "$GITHUB_WORKSPACE/dist/zink-$version.tar.gz"; do
+            environment=$(mktemp -d "$RUNNER_TEMP/zink-distribution.XXXXXX")
+            python -m venv "$environment"
+            "$environment/bin/python" -m pip install "$archive[server]" httpx
+            cd "$RUNNER_TEMP"
+            "$environment/bin/python" -I "$GITHUB_WORKSPACE/scripts/verify_distribution.py" --version "$version"
+            cd "$GITHUB_WORKSPACE"
+          done
+      - name: Upload verified distributions
+        uses: actions/upload-artifact@v6
+        with:
+          name: python-distributions
+          path: dist/*
+          if-no-files-found: error

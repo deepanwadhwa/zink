@@ -65,6 +65,7 @@ omit = ["zink/tests/*"]
 
 [tool.coverage.report]
 show_missing = true
+fail_under = 90
 
 [project.urls]
 Homepage = "https://github.com/deepanwadhwa/zink"
