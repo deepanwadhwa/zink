@@ -62,3 +62,20 @@ with patch.object(Path, 'home', return_value=home):
     subprocess.run(
         [sys.executable, "-c", script, str(tmp_path)], check=True, timeout=45
     )
+
+
+def test_fallback_mapping_retries_and_redacts_when_only_the_original_is_available(
+    monkeypatch,
+):
+    from zink.replacer import json_mapping
+
+    strategy = json_mapping.JsonMappingReplacementStrategy("tool")
+    entity = {"text": "Hammer"}
+    candidates = iter(["Hammer", "Clamp", "Hammer", "Hammer"])
+    with monkeypatch.context() as fake_data:
+        fake_data.setattr(
+            json_mapping, "load_mapping", lambda: {"tool": ["Hammer", "Clamp"]}
+        )
+        fake_data.setattr(json_mapping.random, "choice", lambda _: next(candidates))
+        assert strategy.replace(entity) == "Clamp"
+        assert strategy.replace(entity) == "[REDACTED]"

@@ -1,7 +1,10 @@
 from concurrent.futures import ThreadPoolExecutor
+from datetime import date, datetime
 from importlib import import_module
 from pathlib import Path
 from threading import Event
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
@@ -512,3 +515,246 @@ def test_redact_custom_placeholder_reports_original_span(detections):
     assert (replacement.start, replacement.end) == (0, 3)
     assert replacement.original == "Ann"
     assert replacement.pseudonym == "[NAME]"
+
+
+@pytest.mark.parametrize(
+    ("original", "label", "faker_results", "expected"),
+    [
+        (
+            "10/22/2020",
+            "date",
+            {"date": ["2001-05-24"], "date_between_dates": [date(2001, 5, 24)]},
+            "2001-05-24",
+        ),
+        (
+            "Jul 13 2000",
+            "date",
+            {
+                "month_name": ["July", "February"],
+                "random_int": [13, 12],
+                "year": ["2000", "2003"],
+            },
+            "February 12 2003",
+        ),
+        (
+            "September 30 2001",
+            "date",
+            {"month_name": ["March"], "random_int": [17], "year": ["2020"]},
+            "March 17 2020",
+        ),
+        (
+            "January 2020",
+            "date",
+            {"month_name": ["January", "June"], "year": ["2020", "2004"]},
+            "June 2004",
+        ),
+        (
+            "Tuesday Jan 2006",
+            "date",
+            {
+                "month_name": ["February"],
+                "day_of_week": ["Tuesday", "Monday"],
+                "year": ["2024"],
+            },
+            "February Monday 2024",
+        ),
+        ("May", "month name", {"month_name": ["June"]}, "June"),
+        (
+            "Monday",
+            "weekday",
+            {"date": ["2001-05-24"], "day_of_week": ["Monday", "Friday"]},
+            "Friday",
+        ),
+        (
+            "Jan 03 2000",
+            "date",
+            {"month_name": ["July"], "random_int": [3, 12], "year": ["2003"]},
+            "July 12 2003",
+        ),
+    ],
+)
+def test_replace_dates_with_matching_components(
+    detections, monkeypatch, original, label, faker_results, expected
+):
+    date_module = import_module("zink.replacer.rdate")
+    methods = {name: Mock(side_effect=values) for name, values in faker_results.items()}
+    monkeypatch.setattr(date_module, "Faker", lambda: SimpleNamespace(**methods))
+
+    text = f"Scheduled for {original}; keep this note."
+    start = text.index(original)
+    spans, _ = detections
+    spans[text] = [_entity(text, start, start + len(original), label)]
+
+    result = zn.replace(text, categories=[label])
+
+    assert result.anonymized_text == f"Scheduled for {expected}; keep this note."
+    assert result.replacements == [{**spans[text][0], "source": "rdate"}]
+
+
+@pytest.mark.parametrize(
+    ("pick_upper", "expected"), [(False, "2001-06-01"), (True, "2001-06-04")]
+)
+def test_date_fallback_honors_both_ends_of_its_date_range(
+    monkeypatch, pick_upper, expected
+):
+    date_module = import_module("zink.replacer.rdate")
+    start_date, end_date = datetime(2001, 6, 1), datetime(2001, 6, 4)
+
+    def pick_date(*, date_start, date_end):
+        assert (date_start, date_end) == (start_date, end_date)
+        return (date_end if pick_upper else date_start).date()
+
+    monkeypatch.setattr(
+        date_module,
+        "Faker",
+        lambda: SimpleNamespace(
+            month_name=lambda: "January", date_between_dates=pick_date
+        ),
+    )
+    strategy = date_module.DateReplacementStrategy(
+        start_date=start_date, end_date=end_date
+    )
+
+    assert strategy.replace({"text": "January"}) == expected
+
+
+@pytest.mark.parametrize("range_end", [1, 4])
+def test_numeric_date_honors_range_and_never_reuses_source_date(monkeypatch, range_end):
+    date_module = import_module("zink.replacer.rdate")
+    start_date, end_date = datetime(2001, 6, 1), datetime(2001, 6, range_end)
+
+    def choose_source_date(*, date_start, date_end):
+        assert (date_start, date_end) == (start_date, end_date)
+        return start_date.date()
+
+    monkeypatch.setattr(
+        date_module,
+        "Faker",
+        lambda: SimpleNamespace(
+            date=lambda: "1990-01-01", date_between_dates=choose_source_date
+        ),
+    )
+    strategy = date_module.DateReplacementStrategy(
+        start_date=start_date, end_date=end_date
+    )
+
+    result = strategy.replace({"text": "06/01/2001"})
+
+    if range_end == 1:
+        assert result is None
+    else:
+        assert date(2001, 6, 1) < date.fromisoformat(result) <= date(2001, 6, range_end)
+
+
+@pytest.mark.parametrize(
+    ("original", "label", "recognized", "fake_method", "candidates", "expected"),
+    [
+        (
+            "Alice Brown",
+            "nurse name",
+            True,
+            "name",
+            ["Alice Hill", "Kelly Brown", "Dora White"],
+            "Dora White",
+        ),
+        ("Ann", "doctor", True, "first_name", ["ann", "Edna"], "Edna"),
+        ("Ann", "doctor", True, "first_name", ["Ann Marie", "Edna"], "Edna"),
+        ("Pat", "doctor", True, "first_name", ["PAT"] * 10, "[doctor_REDACTED]"),
+        (
+            "Alice Brown",
+            "doctor",
+            True,
+            "name",
+            ["Alice Gray"] * 10,
+            "[doctor_REDACTED]",
+        ),
+        ("cardiology", "doctor_name", False, None, [], "[doctor_name_REDACTED]"),
+    ],
+)
+def test_replace_person_roles_avoids_source_name_tokens(
+    detections,
+    monkeypatch,
+    original,
+    label,
+    recognized,
+    fake_method,
+    candidates,
+    expected,
+):
+    person_module = import_module("zink.replacer.rperson")
+    outputs = iter(candidates)
+    faker_methods = {fake_method: lambda: next(outputs)} if fake_method else {}
+    monkeypatch.setattr(
+        person_module, "Faker", lambda: SimpleNamespace(**faker_methods)
+    )
+
+    def classify(text, labels):
+        assert (text, labels) == (original, ("name",))
+        return [_entity(text, 0, len(text), "name")] if recognized else []
+
+    monkeypatch.setattr(
+        person_module, "_DEFAULT_EXTRACTOR", SimpleNamespace(predict=classify)
+    )
+    text = f"Assigned to {original}, pending review."
+    start = text.index(original)
+    spans, _ = detections
+    spans[text] = [_entity(text, start, start + len(original), label)]
+
+    result = zn.replace(text, categories=[label])
+
+    assert result.anonymized_text == f"Assigned to {expected}, pending review."
+    assert result.replacements == [{**spans[text][0], "source": "rperson"}]
+
+
+@pytest.mark.parametrize("use_json_mapping", [True, False])
+@pytest.mark.parametrize("faker_raises", [True, False])
+def test_replace_falls_back_if_faker_fails_or_returns_original(
+    monkeypatch, use_json_mapping, faker_raises
+):
+    strategy_module = import_module("zink.replacer.rfakerjson")
+    mapping_module = import_module("zink.replacer.json_mapping")
+    original = "555-0100"
+
+    class FakeFaker:
+        def phone_number(self):
+            if faker_raises:
+                raise RuntimeError("provider could not generate a phone number")
+            return original
+
+    monkeypatch.setattr(strategy_module, "Faker", FakeFaker)
+    with monkeypatch.context() as fake_data:
+        fake_data.setattr(
+            mapping_module, "load_mapping", lambda: {"phone_number": ["555-0200"]}
+        )
+        entity = _entity(original, 0, len(original), "phone_number")
+        result = EntityReplacer(use_json_mapping=use_json_mapping).replace_entities(
+            [entity], original
+        )
+
+    assert result == ("555-0200" if use_json_mapping else "[REDACTED]")
+    assert entity["source"] == ("json" if use_json_mapping else "default")
+
+
+def test_replace_country_and_city_use_different_location_providers(
+    detections, monkeypatch
+):
+    strategy_module = import_module("zink.replacer.rfakerjson")
+    monkeypatch.setattr(
+        strategy_module, "Faker", lambda: SimpleNamespace(city=lambda: "Oakdale")
+    )
+    monkeypatch.setattr(
+        strategy_module.random,
+        "choice",
+        lambda choices: next(country for country in choices if country == "france"),
+    )
+    text = "Japan and Oldtown."
+    spans, _ = detections
+    spans[text] = [_entity(text, 0, 5, "location"), _entity(text, 10, 17, "location")]
+
+    result = zn.replace(text, categories=["location"])
+
+    assert result.anonymized_text == "France and Oakdale."
+    assert [entity["source"] for entity in result.replacements] == [
+        "faker_country",
+        "faker",
+    ]
