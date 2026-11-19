@@ -1,0 +1,80 @@
+name: Publish package
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Verified release tag to publish (for example v0.7.1)
+        required: true
+        default: v0.7.1
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Verify tag and package version
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import subprocess
+          import tomllib
+          from pathlib import Path
+
+          tag = os.environ["RELEASE_TAG"]
+          if re.fullmatch(r"v\d+\.\d+\.\d+", tag) is None:
+              raise SystemExit("Expected a stable version tag such as v0.7.1")
+          version = tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"]
+          if tag != f"v{version}":
+              raise SystemExit("Tag and package versions differ")
+          tagged = subprocess.check_output(["git", "rev-parse", f"refs/tags/{tag}^{{commit}}"], text=True).strip()
+          head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          if tagged != head:
+              raise SystemExit("Checkout does not match the release tag")
+          PY
+      - name: Build and check release artifacts
+        run: |
+          python -m pip install build twine
+          python -m build
+          python -m twine check dist/*
+      - uses: actions/upload-artifact@v6
+        with:
+          name: pypi-distributions
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/zink/
+    permissions:
+      id-token: write
+    env:
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+    steps:
+      - uses: actions/download-artifact@v6
+        with:
+          name: pypi-distributions
+          path: dist/
+      - name: Publish with PyPI Trusted Publishing
+        if: env.PYPI_API_TOKEN == ''
+        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish with the configured project token
+        if: env.PYPI_API_TOKEN != ''
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
