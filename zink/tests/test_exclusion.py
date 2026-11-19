@@ -17,7 +17,10 @@ class TestExclusion(unittest.TestCase):
         self.assertIn("toyota", q.anonymized_text)
         # The * markers should be removed in the final output
         self.assertNotIn("*toyota*", q.anonymized_text)
-        self.assertEqual("I drive a toyota car.", q.anonymized_text)
+        # The model also detects the unprotected word "car". Protecting the
+        # overlapping Toyota detection must not suppress that separate span.
+        self.assertEqual("I drive a toyota car_REDACTED.", q.anonymized_text)
+        self.assertEqual(["car"], [item.original for item in q.replacements])
 
     @pytest.mark.integration
     def test_multiple_exclusions(self):
