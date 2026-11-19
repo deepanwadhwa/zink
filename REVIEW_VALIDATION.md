@@ -11,6 +11,7 @@ No branch push, GitHub release, PyPI upload, or issue reply has been made.
 | --- | --- |
 | Original full-suite baseline | 41 passed in 59.71 seconds, clean archive of the reviewed commit, macOS arm64 / Python 3.13.13 |
 | Final full suite with coverage | 186 passed in 84.20 seconds, macOS arm64 / Python 3.13.13 / GLiNER 0.2.29 / ONNX Runtime 1.30.0 |
+| Final full Linux suite | 186 passed in 80.86 seconds, Linux arm64 / Python 3.13 / GLiNER 0.2.30 / ONNX Runtime 1.32.0 |
 | Deterministic base-package suite | 152 passed on each of Python 3.11.15, 3.12.8, and 3.14.7; 34 model-backed tests explicitly deselected |
 | Branch-enabled coverage | 92.17% combined statement/branch coverage; the configured 90% gate passes |
 | Core transformations | Replacer, merger, date strategy, person strategy, bundled mapping, public API, and result objects report 100% in this run |
@@ -26,8 +27,7 @@ The full suite contains 152 deterministic checks and 34 CPU-model checks.
 On Windows, the POSIX-specific Tokyo timezone subprocess check is explicitly
 skipped because `time.tzset` is unavailable.
 
-The full Linux run is recorded separately below after its final rerun. The
-complete GitHub-hosted Python 3.11–3.14 / Linux, macOS, and Windows matrix
+The complete GitHub-hosted Python 3.11–3.14 / Linux, macOS, and Windows matrix
 awaits the planned branch push. Local results do not claim Windows or GPU
 verification. The coverage and distribution workflows will publish their
 reports/artifacts when those hosted checks execute.
