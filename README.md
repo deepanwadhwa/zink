@@ -1,6 +1,9 @@
 [![PyPI version](https://badge.fury.io/py/zink.svg)](https://badge.fury.io/py/zink)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Run Python Tests](https://github.com/deepanwadhwa/zink/actions/workflows/python-tests.yaml/badge.svg)](https://github.com/deepanwadhwa/zink/actions/workflows/python-tests.yaml)
+[![Coverage report](https://github.com/deepanwadhwa/zink/actions/workflows/coverage.yaml/badge.svg)](https://github.com/deepanwadhwa/zink/actions/workflows/coverage.yaml)
+[![Build documentation](https://github.com/deepanwadhwa/zink/actions/workflows/docs.yaml/badge.svg)](https://github.com/deepanwadhwa/zink/actions/workflows/docs.yaml)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue)](#installation)
 [![PyPI Downloads](https://static.pepy.tech/badge/zink)](https://pepy.tech/projects/zink)
 
 [Documentation](https://zink.readthedocs.io/en/latest/) · [Tutorial](https://zink.readthedocs.io/en/latest/tutorial.html) · [API reference](https://zink.readthedocs.io/en/latest/api.html) · [Contributing](CONTRIBUTING.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
@@ -18,7 +21,7 @@ Evaluation using ZINK on QIB shows strong performance, achieving an F4-score of 
 
 ## Installation
 
-Install the package using `uv` or `pip`.
+Zink requires Python 3.11 or later. Install the package using `uv` or `pip`.
 
 **CPU Support (Recommended for most users):**
 ```bash
@@ -32,12 +35,12 @@ pip install "zink[cpu]"
 pip install "zink[gpu]"
 ```
 
-> **First import:** With a CPU or GPU backend installed, importing Zink downloads
-> approximately 2 GB of model files from Hugging Face and loads the model. This
-> can take several minutes, depending on your connection and hardware. Allow
-> extra disk space for dependencies and the cache. Later imports reuse the cache;
-> download and initialize the model before working offline. Installing bare
-> `zink` emits a warning at import; inference requires the CPU or GPU extra.
+> **First inference:** Your first redaction or replacement downloads approximately
+> 2 GB of model files from Hugging Face if they are not already cached. Download
+> and initialization can take several minutes. Run an example before working
+> offline so the model is available locally. Importing Zink does not load the
+> model. Installing bare `zink` emits a warning at import, and inference requires
+> the CPU or GPU extra.
 
 ## Quick Start
 
@@ -89,7 +92,7 @@ labels = ("person", "company", "car")
 custom_replacements = {
     "person": "Alice",
     "company": "OpenAI",
-    "car": ("Honda", "Toyota")
+    "car": ["Honda", "Toyota"]
 }
 
 result = zn.replace_with_my_data(text, labels, user_replacements=custom_replacements)
@@ -102,7 +105,11 @@ Alice works at OpenAI and drives a Honda.
 ```
 
 ### 3. Shielding LLM and API Calls
-Protect sensitive data in your RAG pipelines or API calls using the `@zink.shield` decorator. It automatically anonymizes inputs before they reach the function and re-identifies the output, creating a secure "shield" around your logic.
+The `@zink.shield` decorator redacts detected spans in one argument before
+passing it to a function. It restores those values in the returned string.
+Review the redacted input before sharing it with an external service, since
+model predictions can miss sensitive text. Treat the restored result and
+local mapping file as sensitive.
 
 ```python
 import zink as zn
@@ -110,8 +117,8 @@ import zink as zn
 # This mock function simulates calling an external API (like OpenAI or Gemini)
 @zn.shield(target_arg='prompt', labels=('person', 'company'))
 def call_sensitive_api(prompt: str):
-    # The prompt received here is already anonymized.
-    # e.g., "Report for person_REDACTED from company_REDACTED."
+    # Display the redacted argument passed to this mock function.
+    print(f"Mock API received: {prompt}")
     return f"Analysis for {prompt} is complete."
 
 # The original, sensitive text
@@ -123,35 +130,38 @@ final_result = call_sensitive_api(prompt=sensitive_data)
 print(final_result)
 ```
 
-**Output:**
+**Possible output (placeholder IDs vary):**
 ```text
-Analysis for John Doe from Acme Inc. is complete.
+Mock API received: Report for person_1234_REDACTED from company_5678_REDACTED.
+Analysis for Report for John Doe from Acme Inc. is complete.
 ```
 
 ### 4. Persistent Entity Mapping
-To ensure consistent redaction across multiple sessions or calls, you can use the `numbered_entities=True` flag. This will automatically use a persistent mapping file stored in your home directory (`~/.zink/mapping.json`).
+Use `numbered_entities=True` to reuse placeholders for a detected label and
+source text across calls and sessions. The `~/.zink/mapping.json` file stores
+the original detected text in plain JSON. Keep the file private.
 
 ```python
 import zink as zn
 
 # First call: Generates IDs and saves them to default mapping file
 text1 = "My name is Alice."
-result1 = zn.redact(text1, labels=["person"], numbered_entities=True)
-print(result1.anonymized_text) 
+result1 = zn.redact(text1, categories=["person"], numbered_entities=True)
+print(result1.anonymized_text)
 # Output: person_1234_REDACTED ...
 
 # Second call: Reuses the SAME ID for 'Alice'
 text2 = "Alice is here again."
-result2 = zn.redact(text2, labels=["person"], numbered_entities=True)
+result2 = zn.redact(text2, categories=["person"], numbered_entities=True)
 print(result2.anonymized_text)
 # Output: person_1234_REDACTED ...
 
 # Check where the mapping file is stored
 print(zn.where_mapping_file())
-
-# Clear the mapping file to start fresh
-zn.refresh_mapping_file()
 ```
+
+Call `zn.refresh_mapping_file()` when you intend to discard the entire mapping.
+For more uses, see the [research text tutorial](https://zink.readthedocs.io/en/latest/tutorial.html).
 
 ## Docker Support
 
@@ -189,12 +199,12 @@ curl -X POST "http://localhost:8000/redact" \
 ```json
 {
   "original_text": "John Doe lives in New York.",
-  "anonymized_text": "<PERSON> lives in <LOCATION>.",
+  "anonymized_text": "person_REDACTED lives in location_REDACTED.",
   "replacements": [
     {
       "label": "person",
       "original": "John Doe",
-      "pseudonym": "<PERSON>",
+      "pseudonym": "person_REDACTED",
       "start": 0,
       "end": 8,
       "score": 0.99
@@ -202,7 +212,7 @@ curl -X POST "http://localhost:8000/redact" \
     {
       "label": "location",
       "original": "New York",
-      "pseudonym": "<LOCATION>",
+      "pseudonym": "location_REDACTED",
       "start": 18,
       "end": 26,
       "score": 0.99
@@ -211,11 +221,10 @@ curl -X POST "http://localhost:8000/redact" \
 }
 ```
 
-### Run Tests
-To verify the installation, you can run the test suite inside the container:
-```bash
-docker run --rm zink pytest zink/tests
-```
+You can check the service at `GET /health`. The response from `POST /redact`
+includes original text and matched values. Review the
+[server API documentation](https://zink.readthedocs.io/en/latest/api.html#http-api)
+before using it with sensitive inputs.
 
 ## How It Works
 
@@ -233,6 +242,16 @@ Zink leverages both the Faker library and the extensive training data from the G
 - **Date Replacement**: Handles various date formats intelligently.
 - **Roles**: Differentiates between roles (e.g., doctor vs. patient) for appropriate naming.
 
+## Related Tools
+
+Zink combines GLiNER's inference-time entity labels with redaction, synthetic
+or custom replacements, and persistent numbered placeholders. PyRedactKit
+focuses on built-in patterns and regular expressions. scrubadub provides
+configurable text detectors and postprocessors. Microsoft Presidio combines
+extensible recognizers with anonymization operators, including a documented
+GLiNER integration. The [related tools guide](https://zink.readthedocs.io/en/latest/related-tools.html)
+describes how these approaches differ.
+
 ## Benchmarks
 
 A [reproducible QIB comparison](benchmarks/QIB-COMPARISON.md) evaluates Zink
@@ -242,7 +261,7 @@ CPU latency, throughput and process memory. Scores use exact target boundaries:
 unmatched predictions count as false positives and missed targets as false negatives.
 The [methodology](benchmarks/QIB-METHODS.md) includes setup and reproduction commands.
 
-Here is a comparison of ZINK against other models on Quasi Identifier Benchmark ([QIB])(https://huggingface.co/datasets/deepanwa/QIB)
+The following numbers are historical results on the [Quasi-Identifier Benchmark (QIB)](https://huggingface.co/datasets/deepanwa/QIB).
 
 These are the project's reported QIB results, not a head-to-head comparison with the redaction packages above. The new reproducible QIB comparison uses a separate exact-span scoring protocol and does not reproduce these historical numbers; verify their original conditions before using them as evidence in a submission.
 

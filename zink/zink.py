@@ -7,6 +7,7 @@ from zink.utils.paths import get_default_mapping_path
 # Create a global instance to preserve cache across calls.
 _global_instance = Pseudonymizer()
 
+
 def redact(
     text,
     categories=None,
@@ -20,7 +21,7 @@ def redact(
     auto_parallel=False,
     chunk_size=1000,
     max_workers=4,
-    numbered_entities=False  # Default to False for compatibility
+    numbered_entities=False,  # Default to False for compatibility
 ):
     """Detect and redact entities in text.
 
@@ -34,10 +35,10 @@ def redact(
         use_cache (bool): Reuse extraction results for identical text and labels.
         use_json_mapping (bool): Select the default JSON-backed replacer when
             constructing the pipeline. Has no effect on redaction output.
-        extractor: Reserved for a custom extractor. Custom pipeline injection is
-            not currently supported by the default ``Pseudonymizer``.
-        merger: Reserved for a custom merger; see ``extractor``.
-        replacer: Reserved for a custom replacer; see ``extractor``.
+        extractor: Optional extractor providing ``predict2`` for single text and
+            ``predict`` for chunks. Offsets must refer to the supplied text.
+        merger: Optional object providing ``merge(entities, text)``.
+        replacer: Optional ``EntityReplacer``-compatible replacement component.
         auto_parallel (bool): Extract long text in chunks when it exceeds
             ``chunk_size``. Defaults to false.
         chunk_size (int): Chunk threshold in characters.
@@ -59,7 +60,7 @@ def redact(
             auto_parallel=auto_parallel,
             chunk_size=chunk_size,
             max_workers=max_workers,
-            numbered_entities=numbered_entities
+            numbered_entities=numbered_entities,
         )
     else:
         # Create a fresh instance
@@ -67,7 +68,7 @@ def redact(
             use_json_mapping=use_json_mapping,
             extractor=extractor,
             merger=merger,
-            replacer=replacer
+            replacer=replacer,
         )
         return pseudonymizer.redact(
             text=text,
@@ -77,8 +78,9 @@ def redact(
             auto_parallel=auto_parallel,
             chunk_size=chunk_size,
             max_workers=max_workers,
-            numbered_entities= numbered_entities
+            numbered_entities=numbered_entities,
         )
+
 
 def replace(
     text,
@@ -92,7 +94,7 @@ def replace(
     replacer=None,
     auto_parallel=False,
     chunk_size=1000,
-    max_workers=4
+    max_workers=4,
 ):
     """Replace detected entities with synthetic or user supplied values.
 
@@ -105,9 +107,9 @@ def replace(
             strings in this call. Defaults to true.
         use_cache (bool): Reuse extraction for identical text and labels.
         use_json_mapping (bool): Use bundled replacement values as a fallback.
-        extractor: Reserved for custom pipeline injection; currently unsupported.
-        merger: Reserved for custom pipeline injection; currently unsupported.
-        replacer: Reserved for custom pipeline injection; currently unsupported.
+        extractor: Optional extractor providing ``predict2`` and ``predict``.
+        merger: Optional object providing ``merge(entities, text)``.
+        replacer: Optional ``EntityReplacer``-compatible replacement component.
         auto_parallel (bool): Request chunked extraction for long text. Text
             longer than ``chunk_size`` is chunked regardless of this setting.
         chunk_size (int): Chunk threshold in characters.
@@ -125,14 +127,14 @@ def replace(
             use_cache=use_cache,
             auto_parallel=auto_parallel,
             chunk_size=chunk_size,
-            max_workers=max_workers
+            max_workers=max_workers,
         )
     else:
         pseudonymizer = Pseudonymizer(
             use_json_mapping=use_json_mapping,
             extractor=extractor,
             merger=merger,
-            replacer=replacer
+            replacer=replacer,
         )
         return pseudonymizer.replace(
             text=text,
@@ -142,8 +144,9 @@ def replace(
             use_cache=use_cache,
             auto_parallel=auto_parallel,
             chunk_size=chunk_size,
-            max_workers=max_workers
+            max_workers=max_workers,
         )
+
 
 def replace_with_my_data(
     text,
@@ -157,7 +160,7 @@ def replace_with_my_data(
     # Usually we don't cache user-defined replacements, but if you want concurrency, add it:
     auto_parallel=False,
     chunk_size=1000,
-    max_workers=4
+    max_workers=4,
 ):
     """Replace detected entities using a required custom label mapping.
 
@@ -169,9 +172,9 @@ def replace_with_my_data(
         ensure_consistency (bool): Reuse one replacement for repeated source
             strings in this call.
         use_json_mapping (bool): Use bundled values for unmapped labels.
-        extractor: Reserved for custom pipeline injection; currently unsupported.
-        merger: Reserved for custom pipeline injection; currently unsupported.
-        replacer: Reserved for custom pipeline injection; currently unsupported.
+        extractor: Optional extractor providing ``predict2`` and ``predict``.
+        merger: Optional object providing ``merge(entities, text)``.
+        replacer: Optional ``EntityReplacer``-compatible replacement component.
         auto_parallel (bool): Request chunked extraction for long text.
         chunk_size (int): Chunk threshold in characters. Longer text is chunked.
         max_workers (int): Maximum worker threads for parallel extraction.
@@ -190,14 +193,14 @@ def replace_with_my_data(
             ensure_consistency=ensure_consistency,
             auto_parallel=auto_parallel,
             chunk_size=chunk_size,
-            max_workers=max_workers
+            max_workers=max_workers,
         )
     else:
         pseudonymizer = Pseudonymizer(
             use_json_mapping=use_json_mapping,
             extractor=extractor,
             merger=merger,
-            replacer=replacer
+            replacer=replacer,
         )
         return pseudonymizer.replace_with_my_data(
             text=text,
@@ -206,8 +209,9 @@ def replace_with_my_data(
             ensure_consistency=ensure_consistency,
             auto_parallel=auto_parallel,
             chunk_size=chunk_size,
-            max_workers=max_workers
+            max_workers=max_workers,
         )
+
 
 def shield(target_arg, labels=None, **zink_kwargs):
     """Decorate a function to redact one argument and restore its string output.
@@ -231,6 +235,8 @@ def shield(target_arg, labels=None, **zink_kwargs):
     """
     if labels is None:
         raise ValueError("The 'labels' argument is required for the shield decorator.")
+    if isinstance(target_arg, int) and target_arg < 0:
+        raise ValueError("The target argument index must be non-negative.")
 
     def decorator(func):
         @functools.wraps(func)
@@ -252,13 +258,12 @@ def shield(target_arg, labels=None, **zink_kwargs):
             # 2. Anonymize the input and build the re-identification map.
             #    `numbered_entities` must be True for re-identification to work.
             result_obj = redact(
-                original_text,
-                categories=labels,
-                numbered_entities=True,
-                **zink_kwargs
+                original_text, categories=labels, numbered_entities=True, **zink_kwargs
             )
             anonymized_text = result_obj.anonymized_text
-            reid_map = {item.pseudonym: item.original for item in result_obj.replacements}
+            reid_map = {
+                item.pseudonym: item.original for item in result_obj.replacements
+            }
 
             # 3. Create new arguments for the wrapped function, with the text anonymized
             if is_kwarg:
@@ -273,16 +278,21 @@ def shield(target_arg, labels=None, **zink_kwargs):
 
             # 5. Re-identify the placeholders in the function's output string
             if not isinstance(anonymized_response, str):
-                return anonymized_response # Return non-strings as-is
+                return anonymized_response  # Return non-strings as-is
 
             reidentified_response = anonymized_response
             for pseudonym, original in reid_map.items():
-                reidentified_response = reidentified_response.replace(pseudonym, original)
+                reidentified_response = reidentified_response.replace(
+                    pseudonym, original
+                )
 
             # 6. Return the final, re-identified result
             return reidentified_response
+
         return wrapper
+
     return decorator
+
 
 def where_mapping_file():
     """Return the path to the numbered entity mapping file.
@@ -291,6 +301,7 @@ def where_mapping_file():
     contains original entity text, so treat it as sensitive data.
     """
     return get_default_mapping_path()
+
 
 def refresh_mapping_file():
     """Delete the numbered entity mapping file if it exists.
@@ -301,49 +312,60 @@ def refresh_mapping_file():
     if os.path.exists(path):
         os.remove(path)
 
+
 def prep(text, words):
-    """Mark whole words to exclude from :func:`redact`.
+    """Mark whole words or phrases to exclude from :func:`redact`.
 
     Args:
         text (str): Input text.
-        words (sequence of str): Case insensitive words or phrases to protect.
+        words (sequence of str): Case-insensitive terms to protect. Empty
+            terms are ignored. Matches cannot touch a word character on
+            either side.
 
     Returns:
-        str: Text with matching spans wrapped in asterisks. ``redact`` removes
-        the markers while leaving protected spans intact.
+        str: Input with matching spans marked by paired asterisks. Protection
+        includes existing marked spans and merges overlapping or touching spans.
+        Original casing is preserved.
+
+    Raises:
+        ValueError: If an unmatched asterisk prevents adding new markers.
     """
     if not words:
         return text
-    
-    # Simple replacement for now. 
-    # Note: This might replace substrings (e.g. "car" in "racecar"). 
-    # If exact word matching is needed, we'd need regex with \b.
-    # The user example implies simple replacement or word-based. 
-    # Given "toyota" -> "*toyota*", simple replace is likely what's expected for a basic version.
-    # But let's try to be slightly smarter and use regex word boundaries if possible?
-    # The user prompt said: "the prep function will insert *s to whatever words are provided in the argument list."
-    # Let's stick to simple replace for now as it's most predictable, or maybe regex.
-    # Let's use regex to avoid partial matches if possible, but user might want partials?
-    # "rav4" -> "*rav4*"
-    # Let's use simple replace as a start, it's safer than regex escaping issues unless we are careful.
-    # Actually, simple replace is risky for "cat" in "category".
-    # Let's use regex with word boundaries for safety.
-    
+
     import re
-    
-    # Sort words by length descending to handle overlapping terms (longest match first)
-    # though with word boundaries it matters less, but still good practice.
-    sorted_words = sorted(words, key=len, reverse=True)
-    
-    for word in sorted_words:
-        # Escape the word to handle special regex chars
-        escaped_word = re.escape(word)
-        # Use word boundaries. 
-        # Note: \b might not work well if 'word' starts/ends with non-word chars.
-        # But for typical entities (names, things), it's fine.
-        # If the word itself contains punctuation, \b might be tricky.
-        # Let's assume standard entities.
-        pattern = r'\b' + escaped_word + r'\b'
-        text = re.sub(pattern, f"*{word}*", text, flags=re.IGNORECASE)
-        
-    return text
+
+    clean_text, existing_spans = _global_instance._parse_exclusions(text)
+    new_spans = []
+    for word in set(words):
+        if word:
+            # Use lookahead so a phrase can overlap another occurrence of itself.
+            pattern = rf"(?=(?<!\w)({re.escape(word)})(?!\w))"
+            new_spans.extend(
+                match.span(1)
+                for match in re.finditer(pattern, clean_text, re.IGNORECASE)
+            )
+    if not new_spans:
+        return text
+
+    merged_spans = []
+    for start, end in sorted(existing_spans + new_spans):
+        if merged_spans and start <= merged_spans[-1][1]:
+            previous_start, previous_end = merged_spans[-1]
+            merged_spans[-1] = (previous_start, max(previous_end, end))
+        else:
+            merged_spans.append((start, end))
+    if merged_spans == existing_spans:
+        return text
+    if "*" in clean_text:
+        raise ValueError(
+            "Cannot add protection markers to text with an unmatched asterisk."
+        )
+
+    parts = []
+    cursor = 0
+    for start, end in merged_spans:
+        parts.extend((clean_text[cursor:start], "*", clean_text[start:end], "*"))
+        cursor = end
+    parts.append(clean_text[cursor:])
+    return "".join(parts)

@@ -4,6 +4,7 @@ import json
 import os
 from collections import defaultdict
 from functools import lru_cache
+from threading import RLock
 from zink.extractor import _DEFAULT_EXTRACTOR
 from zink.merger import EntityMerger
 from zink.replacer import EntityReplacer
@@ -11,131 +12,137 @@ from zink.result import PseudonymizationResult, ReplacementDetail
 from zink.utils.paths import get_default_mapping_path
 from .passage_processors import extract_entities_in_parallel
 
+_MAPPING_LOCK = RLock()
+
+
 class Pseudonymizer:
-    def __init__(self):
-        self.extractor = _DEFAULT_EXTRACTOR
-        self.merger = EntityMerger()
-        self.replacer = EntityReplacer(use_json_mapping=True)
-    
-    #
-    # 1) SINGLE-PASS: Normal and Cached versions
-    #
+    """Coordinate extraction, span merging, and text transformation.
+
+    Args:
+        use_json_mapping (bool): Enable bundled replacement fallback values.
+        extractor: Optional object providing ``predict2`` and ``predict``.
+        merger: Optional object providing ``merge(entities, text)``.
+        replacer: Optional ``EntityReplacer``-compatible object.
+    """
+
+    def __init__(
+        self, use_json_mapping=True, extractor=None, merger=None, replacer=None
+    ):
+        self.extractor = extractor if extractor is not None else _DEFAULT_EXTRACTOR
+        self.merger = merger if merger is not None else EntityMerger()
+        self.replacer = (
+            replacer
+            if replacer is not None
+            else EntityReplacer(use_json_mapping=use_json_mapping)
+        )
+
     def _single_pass_extraction(self, text, categories):
-        """Plain extraction & merging (uncached)."""
-        if self.extractor.model is None:
-             raise ImportError(
-                "GLiNER and ONNX Runtime are required for extraction but are unavailable. "
-                "Please install it with 'pip install zink[cpu]' or 'pip install zink[gpu]'."
-            )
-        raw_ents = self.extractor.predict2(text, labels=categories)
-        return self.merger.merge(raw_ents, text)
+        """Return raw detections before protection filtering or span merging."""
+        return self.extractor.predict2(text, labels=categories)
 
     @lru_cache(maxsize=128)
     def _cached_single_pass_extraction(self, text, categories_tuple):
         """
-        Same as _single_pass_extraction, but decorated with lru_cache.
-        categories must be passed as a tuple for caching to work.
+        Cache raw detections; each call applies its own protection and merging.
         """
 
-        if self.extractor.model is None:
-             raise ImportError(
-                "GLiNER and ONNX Runtime are required for extraction but are unavailable. "
-                "Please install it with 'pip install zink[cpu]' or 'pip install zink[gpu]'."
-            )
-        raw_ents = self.extractor.predict2(text, labels=categories_tuple)
-        return self.merger.merge(raw_ents, text)
-    
-    #
-    # 2) PARALLEL: For large texts
-    #
+        return self._single_pass_extraction(text, categories_tuple)
+
     def _parallel_extraction(self, text, chunk_size, max_workers, categories):
         """
-        Extract in parallel, then merge globally.
-        (Typically not cached, but you can do so if you want.)
+        Return raw chunk detections in original-text coordinates without caching.
         """
-        if self.extractor.model is None:
-             raise ImportError(
-                "GLiNER and ONNX Runtime are required for extraction but are unavailable. "
-                "Please install it with 'pip install zink[cpu]' or 'pip install zink[gpu]'."
-            )
         all_ents = extract_entities_in_parallel(
-            text, chunk_size=chunk_size, max_workers=max_workers, categories=categories
+            text,
+            chunk_size=chunk_size,
+            max_workers=max_workers,
+            categories=categories,
+            extractor=self.extractor,
         )
         all_ents.sort(key=lambda e: e["start"])
-        return self.merger.merge(all_ents, text)
-    
-    #
-    # 3) Public Methods
-    #
-    # def redact(self, text, categories=None, placeholder=None,
-    #            use_cache=True, auto_parallel=False, chunk_size=1000, max_workers=4, numbered_entities=False):
-    #     """
-    #     If auto_parallel=True & text is large, do parallel extraction.
-    #     Else do single-pass extraction.
-    #     If use_cache=True, we call the cached single-pass method.
-    #     """
-    #     if len(text) > chunk_size:
-    #         auto_parallel = True
-    #     if auto_parallel and len(text) > chunk_size:
-    #         merged = self._parallel_extraction(text, chunk_size, max_workers, categories)
-    #         anonymized = self._do_redact(text, merged, placeholder, numbered_entities=numbered_entities)
-    #     else:
-    #         # single-pass
-    #         if use_cache:
-    #             # Convert categories to a tuple for caching
-    #             cat_tuple = tuple(categories) if categories else tuple()
-    #             merged = self._cached_single_pass_extraction(text, cat_tuple)
-    #         else:
-    #             merged = self._single_pass_extraction(text, categories)
-    #         anonymized = self._do_redact(text, merged, placeholder, numbered_entities=numbered_entities)
+        return all_ents
 
-    #     return PseudonymizationResult(
-    #         original_text=text,
-    #         anonymized_text=anonymized,
-    #         replacements=merged,
-    #         features={"num_replacements": len(merged)},
-    #     )
+    def _merge_for_redaction(self, entities, text, protected_spans):
+        """Merge detections within unprotected regions, never across a marker.
 
-    def redact(self, text, categories=None, placeholder=None, use_cache=True, 
-               auto_parallel=False, chunk_size=1000, max_workers=4, numbered_entities=False):
-        
+        A broad detection touching protection is discarded before merging, so
+        it cannot hide a separate detection outside the protected interval.
+        """
+        if not protected_spans:
+            return self.merger.merge(entities, text)
+
+        merged = []
+        region_start = 0
+        for protected_start, protected_end in [
+            *protected_spans,
+            (len(text), len(text)),
+        ]:
+            region_entities = [
+                entity
+                for entity in entities
+                if region_start <= entity["start"] < entity["end"] <= protected_start
+            ]
+            if region_entities:
+                region_merged = self.merger.merge(region_entities, text)
+                if any(
+                    not region_start
+                    <= entity["start"]
+                    < entity["end"]
+                    <= protected_start
+                    for entity in region_merged
+                ):
+                    raise ValueError("Merged entity crosses a protected boundary")
+                merged.extend(region_merged)
+            region_start = protected_end
+        return merged
+
+    def redact(
+        self,
+        text,
+        categories=None,
+        placeholder=None,
+        use_cache=True,
+        auto_parallel=False,
+        chunk_size=1000,
+        max_workers=4,
+        numbered_entities=False,
+    ):
+        """Redact detected spans after filtering overlaps with protected text.
+
+        See :func:`zink.redact` for the arguments and result fields. Numbered
+        mapping updates are serialized across threads in this process.
+        """
         # 1. Parse exclusion markers
         clean_text, protected_spans = self._parse_exclusions(text)
 
         # 2. Run extraction on CLEAN text
         if len(clean_text) > chunk_size and auto_parallel:
-            merged = self._parallel_extraction(clean_text, chunk_size, max_workers, categories)
+            merged = self._parallel_extraction(
+                clean_text, chunk_size, max_workers, categories
+            )
         else:
             if use_cache:
-                cat_tuple = tuple(categories) if categories else tuple()
+                cat_tuple = tuple(categories) if categories is not None else None
                 merged = self._cached_single_pass_extraction(clean_text, cat_tuple)
             else:
                 merged = self._single_pass_extraction(clean_text, categories)
-        
-        # 3. Filter out entities that overlap with protected spans
-        filtered_entities = []
-        for ent in merged:
-            is_protected = False
-            ent_start, ent_end = ent['start'], ent['end']
-            for p_start, p_end in protected_spans:
-                # Check for overlap
-                if (ent_start < p_end and ent_end > p_start):
-                    is_protected = True
-                    break
-            if not is_protected:
-                filtered_entities.append(ent)
+
+        # Filter raw predictions before merging, and keep protected gaps intact.
+        filtered_entities = self._merge_for_redaction(
+            merged, clean_text, protected_spans
+        )
 
         # 4. Redact the clean text
-        anonymized_text, detailed_replacements = self._do_redact(clean_text, filtered_entities, placeholder, numbered_entities)
+        with _MAPPING_LOCK:
+            anonymized_text, detailed_replacements = self._do_redact(
+                clean_text, filtered_entities, placeholder, numbered_entities
+            )
 
         return PseudonymizationResult(
-            original_text=text, # Return original with *? Or clean? User asked for output without *, so clean_text is effectively the base.
-                                # But original_text usually means the input. 
-                                # Let's return the input 'text' as original_text.
+            original_text=text,
             anonymized_text=anonymized_text,
             replacements=detailed_replacements,
             features={"num_replacements": len(filtered_entities)},
-
         )
 
     def _parse_exclusions(self, text):
@@ -147,29 +154,25 @@ class Pseudonymizer:
         """
         clean_text = ""
         protected_spans = []
-        
+
         i = 0
         n = len(text)
         clean_idx = 0
-        
+
         while i < n:
-            if text[i] == '*':
-                # Check if it's a valid start of a protected span (simplistic check: find next *)
-                # We handle nested * or unmatched * by just treating them as chars if not paired?
-                # For simplicity, let's assume non-nested, greedy until next *.
-                # If no closing *, treat as literal *.
-                
-                # Find closing *
-                closing_idx = text.find('*', i + 1)
+            if text[i] == "*":
+                # Pair consecutive markers; keep an unmatched trailing * literal.
+                closing_idx = text.find("*", i + 1)
                 if closing_idx != -1:
                     # Found a pair
-                    span_content = text[i+1:closing_idx]
+                    span_content = text[i + 1 : closing_idx]
                     start_span = clean_idx
                     clean_text += span_content
                     clean_idx += len(span_content)
                     end_span = clean_idx
-                    protected_spans.append((start_span, end_span))
-                    
+                    if start_span < end_span:
+                        protected_spans.append((start_span, end_span))
+
                     i = closing_idx + 1
                 else:
                     # No closing *, treat as literal
@@ -180,7 +183,7 @@ class Pseudonymizer:
                 clean_text += text[i]
                 clean_idx += 1
                 i += 1
-                
+
         return clean_text, protected_spans
 
     def _do_redact(self, text, merged_entities, placeholder, numbered_entities=False):
@@ -199,7 +202,7 @@ class Pseudonymizer:
             mapping_file = get_default_mapping_path()
             if os.path.exists(mapping_file):
                 try:
-                    with open(mapping_file, 'r') as f:
+                    with open(mapping_file, "r") as f:
                         loaded_mapping = json.load(f)
                         # Reconstruct entity_to_id_map and used_ids_per_label
                         # Expected format: {"label": {"original_text": "id"}}
@@ -208,13 +211,11 @@ class Pseudonymizer:
                                 entity_to_id_map[(label, original_text)] = ent_id
                                 used_ids_per_label[label].add(ent_id)
                 except Exception as e:
-                    # Ideally log this, but for now we'll just proceed with empty mapping or raise?
-                    # Let's print a warning for now as we don't have a logger set up
                     print(f"Warning: Failed to load mapping file {mapping_file}: {e}")
 
             for e in merged_entities:
-                label = e['label']
-                original_text = e['text']
+                label = e["label"]
+                original_text = e["text"]
                 entity_key = (label, original_text)
 
                 # If we've seen this entity before, reuse its ID.
@@ -228,25 +229,29 @@ class Pseudonymizer:
                             used_ids_per_label[label].add(rand_id)
                             entity_to_id_map[entity_key] = rand_id
                             break
-                
+
                 pseudonym = f"{label}_{rand_id}_REDACTED"
-                replacements_to_apply.append((e['start'], e['end'], pseudonym))
-                
-                detailed_replacements.append(ReplacementDetail(
-                    label=label, original=original_text, pseudonym=pseudonym,
-                    start=e['start'], end=e['end'], score=e.get('score', 1.0)
-                ))
-            
+                replacements_to_apply.append((e["start"], e["end"], pseudonym))
+
+                detailed_replacements.append(
+                    ReplacementDetail(
+                        label=label,
+                        original=original_text,
+                        pseudonym=pseudonym,
+                        start=e["start"],
+                        end=e["end"],
+                        score=e.get("score", 1.0),
+                    )
+                )
+
             # Save updated mapping
             try:
                 # Convert back to serializable format: {"label": {"original_text": "id"}}
                 serializable_mapping = defaultdict(dict)
-                # We need to merge with what we loaded if we want to be safe, 
-                # but entity_to_id_map should contain everything we loaded + new stuff
                 for (label, original_text), ent_id in entity_to_id_map.items():
                     serializable_mapping[label][original_text] = ent_id
-                
-                with open(mapping_file, 'w') as f:
+
+                with open(mapping_file, "w") as f:
                     json.dump(serializable_mapping, f, indent=2)
             except Exception as e:
                 print(f"Warning: Failed to save mapping file {mapping_file}: {e}")
@@ -255,39 +260,59 @@ class Pseudonymizer:
             # Standard (non-numbered) redaction
             for e in merged_entities:
                 pseudonym = placeholder or f"{e['label']}_REDACTED"
-                replacements_to_apply.append((e['start'], e['end'], pseudonym))
-                detailed_replacements.append(ReplacementDetail(
-                    label=e['label'], original=e['text'], pseudonym=pseudonym,
-                    start=e['start'], end=e['end'], score=e.get('score', 1.0)
-                ))
+                replacements_to_apply.append((e["start"], e["end"], pseudonym))
+                detailed_replacements.append(
+                    ReplacementDetail(
+                        label=e["label"],
+                        original=e["text"],
+                        pseudonym=pseudonym,
+                        start=e["start"],
+                        end=e["end"],
+                        score=e.get("score", 1.0),
+                    )
+                )
 
         # Apply all replacements from the end to the start to preserve indices.
         for start, end, repl in reversed(replacements_to_apply):
             result_text = result_text[:start] + repl + result_text[end:]
-            
+
         return result_text, detailed_replacements
 
-    def replace(self, text, categories=None, user_replacements=None,
-                ensure_consistency=True, use_cache=True,
-                auto_parallel=False, chunk_size=1000, max_workers=4):
+    def replace(
+        self,
+        text,
+        categories=None,
+        user_replacements=None,
+        ensure_consistency=True,
+        use_cache=True,
+        auto_parallel=False,
+        chunk_size=1000,
+        max_workers=4,
+    ):
         """
-        Replaces entities with pseudonyms (Faker/JSON).
-        If auto_parallel=True & text is large, do parallel extraction.
-        Else do single-pass (with optional caching).
+        Replace detected spans using a per-call consistent or independent mapping.
+
+        See :func:`zink.replace`. Long text is chunked when it exceeds
+        ``chunk_size``. Returned entity dictionaries are private to this result.
         """
         if len(text) > chunk_size:
             auto_parallel = True
         if auto_parallel and len(text) > chunk_size:
-            merged = self._parallel_extraction(text, chunk_size, max_workers, categories)
+            merged = self._parallel_extraction(
+                text, chunk_size, max_workers, categories
+            )
         else:
             # single-pass
             if use_cache:
-                cat_tuple = tuple(categories) if categories else tuple()
+                cat_tuple = tuple(categories) if categories is not None else None
                 merged = self._cached_single_pass_extraction(text, cat_tuple)
             else:
                 merged = self._single_pass_extraction(text, categories)
 
-        anonymized_text = self._replace_entities(text, merged, user_replacements, ensure_consistency)
+        merged = [dict(entity) for entity in self.merger.merge(merged, text)]
+        anonymized_text = self._replace_entities(
+            text, merged, user_replacements, ensure_consistency
+        )
         return PseudonymizationResult(
             original_text=text,
             anonymized_text=anonymized_text,
@@ -295,20 +320,35 @@ class Pseudonymizer:
             features={"num_replacements": len(merged)},
         )
 
-    def _replace_entities(self, text, merged_entities, user_replacements=None, ensure_consistency=True):
+    def _replace_entities(
+        self, text, merged_entities, user_replacements=None, ensure_consistency=True
+    ):
         """
         Perform the actual replacements, ensuring consistency if requested.
         """
         if ensure_consistency:
-            return self.replacer.replace_entities_ensure_consistency(merged_entities, text, user_replacements)
+            return self.replacer.replace_entities_ensure_consistency(
+                merged_entities, text, user_replacements
+            )
         else:
-            return self.replacer.replace_entities(merged_entities, text, user_replacements)
+            return self.replacer.replace_entities(
+                merged_entities, text, user_replacements
+            )
 
-    def replace_with_my_data(self, text, categories=None, user_replacements=None,
-                             ensure_consistency=True,
-                             auto_parallel=False, chunk_size=1000, max_workers=4):
+    def replace_with_my_data(
+        self,
+        text,
+        categories=None,
+        user_replacements=None,
+        ensure_consistency=True,
+        auto_parallel=False,
+        chunk_size=1000,
+        max_workers=4,
+    ):
         """
-        Replaces entities with user-defined data. Typically skip caching, but if you want, you can add it.
+        Replace detected spans with required user data, without caching extraction.
+
+        See :func:`zink.replace_with_my_data` for the arguments and result fields.
         """
         if len(text) > chunk_size:
             auto_parallel = True
@@ -316,13 +356,18 @@ class Pseudonymizer:
             raise ValueError("User replacements must be a non-empty dict.")
 
         if auto_parallel and len(text) > chunk_size:
-            all_entities = self._parallel_extraction(text, chunk_size, max_workers, categories)
+            all_entities = self._parallel_extraction(
+                text, chunk_size, max_workers, categories
+            )
         else:
-            # Usually user_data changes a lot, so caching might not help, 
-            # but you CAN do it if you want. We'll skip here for simplicity.
             all_entities = self._single_pass_extraction(text, categories)
 
-        anonymized_text = self._replace_entities(text, all_entities, user_replacements, ensure_consistency)
+        all_entities = [
+            dict(entity) for entity in self.merger.merge(all_entities, text)
+        ]
+        anonymized_text = self._replace_entities(
+            text, all_entities, user_replacements, ensure_consistency
+        )
         return PseudonymizationResult(
             original_text=text,
             anonymized_text=anonymized_text,

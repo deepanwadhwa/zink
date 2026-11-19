@@ -1,39 +1,55 @@
+"""Optional HTTP interface for redacting text with Zink."""
+
+from dataclasses import asdict
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
+
 import zink
 
 app = FastAPI(
     title="Zink Redaction API",
     description="API for redacting sensitive information using Zink.",
-    version=zink.__version__
+    version=zink.__version__,
 )
 
+
 class RedactRequest(BaseModel):
+    """Text and optional labels for one redaction request."""
+
     text: str
-    labels: Optional[List[str]] = None
+    labels: list[str] | None = None
+
 
 class RedactResponse(BaseModel):
+    """Original and redacted text with details for each detected span."""
+
     original_text: str
     anonymized_text: str
-    replacements: List[dict]
+    replacements: list[dict]
+
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict[str, str]:
+    """Report service status and the installed Zink version."""
     return {"status": "ok", "version": zink.__version__}
 
+
 @app.post("/redact", response_model=RedactResponse)
-async def redact(request: RedactRequest):
+async def redact(request: RedactRequest) -> RedactResponse:
+    """Replace detected spans and serialize their original offsets and values."""
     try:
-        result = zink.redact(request.text, request.labels)
+        result = zink.redact(request.text, categories=request.labels)
         return RedactResponse(
             original_text=result.original_text,
             anonymized_text=result.anonymized_text,
-            replacements=[r.dict() if hasattr(r, 'dict') else r.__dict__ for r in result.replacements]
+            replacements=[asdict(replacement) for replacement in result.replacements],
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

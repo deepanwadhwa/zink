@@ -1,6 +1,6 @@
 [project]
 name = "zink"
-version = "0.7.0"
+version = "0.7.1"
 description = "Zink lets you safeguard privacy by detecting sensitive information and replacing it with secure, customizable placeholders."
 authors = [
     { name = "Deepan Wadhwa"}
@@ -21,11 +21,18 @@ gpu = [
     "gliner>=0.2.17",
     "onnxruntime-gpu>=1.17.0",
 ]
+test = ["pytest>=8.3.4", "pytest-cov>=6", "httpx>=0.28"]
+server = ["fastapi>=0.115", "uvicorn>=0.34"]
 
 [dependency-groups]
 dev = [
     "ipython>=9.0.0",
     "pytest>=8.3.4",
+    "pytest-cov>=6",
+    "build>=1.2",
+    "fastapi>=0.115",
+    "uvicorn>=0.34",
+    "httpx>=0.28",
     "ruff>=0.11.2",
     "sphinx>=8.2.3",
     "sphinx-autobuild>=2024.10.3",
@@ -38,17 +45,27 @@ docs = [
     "sphinx-rtd-theme",
 ]
 
-[tool.setuptools]
+[tool.hatch.build.targets.wheel]
 packages = ["zink"]
-include-package-data = true
+exclude = ["zink/tests/**"]
 
 [tool.ruff.lint]
-# Start with undefined names; expand coverage as existing code is cleaned up.
-select = ["F821", "F822", "F823"]
+select = ["E4", "E7", "E9", "F"]
 
 [tool.pytest.ini_options]
 # Benchmark helpers live in the checkout, outside the installed zink package.
 pythonpath = ["."]
+testpaths = ["tests", "zink/tests"]
+markers = ["integration: requires the real GLiNER/ONNX inference backend and cached model"]
+
+[tool.coverage.run]
+branch = true
+source = ["zink"]
+omit = ["zink/tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 90
 
 [project.urls]
 Homepage = "https://github.com/deepanwadhwa/zink"

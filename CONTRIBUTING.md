@@ -9,26 +9,32 @@ Use Python 3.11 or newer. From a clone of this repository:
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install -e '.[cpu]'
-python -m pip install pytest ruff sphinx sphinx-rtd-theme
+python -m pip install -e '.[cpu,server,test]'
+python -m pip install build ruff sphinx sphinx-rtd-theme
 ```
 
 On Windows, activate the virtual environment with `.venv\Scripts\activate`.
-The CPU extra installs GLiNER and ONNX Runtime. The first import downloads the
-default model (approximately 2 GB), so allow network access, several minutes
-for initialization, and extra disk space for dependencies and the cache.
+The CPU extra installs GLiNER and ONNX Runtime. The first inference downloads
+the default model (approximately 2 GB) when it is missing from the local
+cache. The integration tests need that model. To run them offline, initialize
+it first while online with `python -c 'import zink; zink.redact("Alice is here.")'`.
 
 ## Checks
 
 ```bash
-ruff check .
-pytest tests zink/tests
-sphinx-build -b html -W --keep-going docs/source docs/build/html
+python -m ruff check .
+python -m pytest -m "not integration"
+python -m pytest -m integration
+python -m pytest -m "not integration" --cov=zink --cov-report=term-missing
+python -m sphinx -b html -W --keep-going docs/source docs/build/html
+python -m build
 ```
 
-Tests and documentation builds also run on pull requests. When changing
-behavior, add a test covering the use case. When changing the public API,
-update its docstring and the relevant tutorial or README example.
+The first pytest command runs the deterministic unit, API, and example tests
+without downloading a model. The second runs the real-model CPU tests.
+Both run on pull requests. When changing behavior, add a test covering the
+use case. When changing the public API, update its docstring and any affected
+tutorial or README example.
 
 ## Proposing a change
 

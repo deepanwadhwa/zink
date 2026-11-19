@@ -2,9 +2,8 @@ Tutorial: preparing research text
 =================================
 
 This example uses a short, fictional interview note. Install ``zink[cpu]`` as
-described on the :doc:`index` page first. The first import with the inference
-backend installed downloads the model, so initialize it before entering an
-offline environment.
+described on the :doc:`index` page first. Your first inference downloads
+the model when it is missing from the cache. Run an example before going offline.
 
 1. Choose labels and redact
 ---------------------------
@@ -31,8 +30,10 @@ positive can remove useful research content.
 2. Keep a research term
 -----------------------
 
-If a word must remain in the text, mark it with asterisks or call :func:`zink.prep`.
-The markers are removed from the result.
+If a word or phrase must remain in the text, mark it with paired asterisks
+or call :func:`zink.prep`. Overlapping phrases merge into one protected
+span and retain the original casing. Redaction removes the markers and
+leaves detections that overlap a protected span intact.
 
 .. code-block:: python
 
@@ -45,7 +46,9 @@ The markers are removed from the result.
 
 To replace detected spans with your own values, pass ``user_replacements``.
 Unmapped labels use Zink's default replacement strategy. When you provide a
-list, Zink selects one value from it.
+list, Zink selects one value from it. With ``ensure_consistency=True``
+(the default), repeated detected text shares a replacement within the call.
+Only the detected spans change.
 
 .. code-block:: python
 
@@ -103,17 +106,23 @@ output. Keep output private until you have reviewed every file.
    from pathlib import Path
    import zink
 
-   source = Path("notes")
-   destination = Path("redacted_notes")
-   destination.mkdir(exist_ok=True)
-   labels = ("person", "company", "location", "date")
+   def redact_folder(source, destination, *, numbered_entities=False):
+       destination.mkdir(exist_ok=True)
+       labels = ("person", "company", "location", "date")
+       for path in sorted(source.glob("*.txt")):
+           with path.open("r", encoding="utf-8", newline="") as input_file:
+               text = input_file.read()
+           result = zink.redact(
+               text,
+               categories=labels,
+               use_cache=False,
+               numbered_entities=numbered_entities,
+           )
+           with (destination / path.name).open("x", encoding="utf-8", newline="") as output:
+               output.write(result.anonymized_text)
+           print(path.name, result.features["num_replacements"])
 
-   for path in sorted(source.glob("*.txt")):
-       text = path.read_text(encoding="utf-8")
-       result = zink.redact(text, categories=labels, use_cache=False)
-       with (destination / path.name).open("x", encoding="utf-8") as output:
-           output.write(result.anonymized_text)
-       print(path.name, result.features["num_replacements"])
+   redact_folder(Path("notes"), Path("redacted_notes"))
 
 For example, ``notes/interview_01.txt`` might contain::
 
@@ -127,7 +136,8 @@ detected values, so this example writes only ``anonymized_text``.
 
 Files longer than the model's context may lose detections. For long documents,
 split on paragraph boundaries and review the resulting sections. Avoid splitting
-names or other entities across sections. The example uses sequential calls;
-do not share Zink's default extractor across concurrent file-processing threads.
-To keep stable placeholders across files, add ``numbered_entities=True`` and
-protect the mapping file as described above.
+names or other entities across sections. The example processes files
+sequentially. Concurrent calls keep their input text separate. When using
+numbered redaction, keep writes to the mapping file in a single process.
+To keep stable placeholders across files, call ``redact_folder`` with
+``numbered_entities=True`` and protect the mapping file as described above.

@@ -14,6 +14,7 @@ class ReplacementDetail:
         end (int): Exclusive end offset in that text.
         score (float): Model confidence reported for the span.
     """
+
     label: str
     original: str
     pseudonym: str
@@ -34,6 +35,7 @@ class PseudonymizationResult:
         features (dict): Counts and other metadata. Currently includes
             ``num_replacements``.
     """
+
     original_text: str
     anonymized_text: str
     replacements: List[ReplacementDetail] = field(default_factory=list)
