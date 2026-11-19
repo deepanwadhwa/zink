@@ -29,6 +29,20 @@ for reviewer approval. After acceptance, verify the editor-approved version
 and create/verify its version-specific archive DOI as described in
 `RELEASE_PREPARATION.md`; the older 0.2.1 DOI is not the 0.7.1 archive.
 
+## Post-merge CI follow-up
+
+The first [post-merge matrix attempt](https://github.com/deepanwadhwa/zink/actions/runs/44549554497)
+finished with 23 passing jobs and one cancelled macOS Python 3.11 unit job.
+That job had no assigned runner and executed no steps. GitHub annotated it
+with "The job was not acquired by Runner of type hosted even after multiple
+attempts" and macOS arm64 capacity notices. The affected job was requested
+again; the linked run records the rerun result.
+
+The earlier documentation-only completion commit used a CI-skip marker.
+Follow-up commits must use normal CI, including documentation changes, as
+recorded in `CONTRIBUTING.md`. The original pre-release 28-check success is a
+separate run and does not substitute for verifying the current main commit.
+
 ## PyPI publishing identity
 
 The prepared GitHub workflow supports existing Trusted Publishing or a

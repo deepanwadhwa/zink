@@ -36,6 +36,12 @@ Both run on pull requests. When changing behavior, add a test covering the
 use case. When changing the public API, update its docstring and any affected
 tutorial or README example.
 
+Run normal CI for every commit, including documentation and release records.
+Do not use commit-message markers that skip CI. Verify checks on the current
+commit before reporting completion. If a hosted runner fails to start,
+inspect its annotations and rerun the affected job; a queued or cancelled job
+is not a passing check.
+
 ## Proposing a change
 
 Open an issue describing a bug or proposed feature, including a minimal
