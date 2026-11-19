@@ -1,88 +1,43 @@
-# Draft response for pyOpenSci submission #352
+# Posted pyOpenSci response
 
-Prepared locally for posting after the branch is pushed and hosted checks pass.
-Version `0.7.1` is the proposed update. No review reply or release has been published.
+Posted at https://github.com/pyOpenSci/software-submission/issues/352#issuecomment-7012929949 on 2026-11-19.
 
-Hi @yeelauren, @korsakowii, and @erik-whiting — thank you for the reviews.
-The changes below address the submitted source snapshot and add regression
-coverage to the existing feature tests.
+Hi @yeelauren, @korsakowii, and @erik-whiting — Zink **0.7.1** is now available on [PyPI](https://pypi.org/project/zink/0.7.1/) and [GitHub](https://github.com/deepanwadhwa/zink/releases/tag/v0.7.1). The [updated documentation](https://zink.readthedocs.io/en/latest/) is live. Please re-review this version.
 
-## Reviewer 1
+The changes are in [PR #16](https://github.com/deepanwadhwa/zink/pull/16), merged at `5503065c09db1948b27af5cddb5cf6632b3839ba`.
 
-1. **Consistent replacements:** replacements now use detected offsets in the
-   original text. The `Ann`/`Annette` reproduction produces
-   `Alice met Alice; Alice arrived later.` Tests also cover undetected
-   occurrences, inserted values containing source names, candidate lists,
-   independent replacement, cache isolation, and concurrent requests.
-2. **Overlapping protection:** `prep()` collects and merges matching spans
-   before inserting markers, retaining original casing. Protection is applied
-   to raw detections before merging. Independently detected names outside a
-   protected phrase remain eligible for redaction, and merging cannot bridge
-   across protected text. Tests cover nested and crossing phrases, repeated
-   matches, Unicode, cache reuse, chunk boundaries, and numbered mappings.
-3. **README examples:** the numbering examples use `categories=`, and custom
-   replacement candidates use a list. Tests execute the actual README blocks
-   and folder-processing tutorial, including real CPU-model example checks.
-4. **Concurrent extraction:** request text and masks are now local to each
-   call. Model initialization is shared and lazy. Event-controlled regressions
-   cover overlapping requests, masking passes, independent replacement maps,
-   worker failures, and out-of-order passage completion. CPU-model concurrent
-   inference is also tested. Numbered mapping updates are serialized within
-   one process; separate processes still require external coordination.
+### Reviewer 1
 
-The default merger also resolves crossing and nested detections into
-non-overlapping spans covering their union, preventing span-based replacement
-from duplicating or leaving behind part of a detected entity.
+1. **Consistent replacements:** replacement values are applied only to detected offsets in the original text. The `Ann`/`Annette` example now produces `Alice met Alice; Alice arrived later.` Added regressions for undetected occurrences, inserted values containing another source name, both consistency modes, candidate lists, cache isolation, and concurrent replacement mappings.
+2. **Overlapping protection:** `prep()` collects and merges spans before inserting markers, preserving source casing. Raw predictions are filtered against protection before merging, so an overlapping protected prediction cannot hide a separately detected entity outside it. Merging also cannot bridge a protected gap. Tests cover nested/crossing phrases, repeated matches, Unicode, cache reuse, chunk boundaries, and numbered mappings.
+3. **README examples:** numbering calls use `categories=`, and replacement candidates use a list. Tests execute the actual README code blocks and folder-processing tutorial, including real CPU-model checks for the main examples.
+4. **Concurrent extraction:** request text and masks are local to each call, and model initialization is shared and lazy. Event-controlled regressions cover overlapping requests, independent masking/replacement maps, worker failure recovery, and out-of-order passage completion. Real CPU-model concurrency checks also pass. Numbered mapping updates are serialized across threads in one process; separate processes still require coordination.
 
-## Reviewer 2
+The default merger also handles nested/crossing predictions using non-overlapping spans covering their union, preventing span rendering from duplicating or leaving behind detected text.
 
-1. **Documentation, examples, and README:** the documentation site already
-   existed at <https://zink.readthedocs.io/en/latest/>. The README links directly
-   to the tutorial and API reference. The update expands runnable examples,
-   adds a short comparison with related tools, and adds supported-Python,
-   docs-build, and coverage-workflow badges. Coverage reports are generated
-   from the test run rather than represented by a static percentage.
-2. **Commented-out code:** the obsolete extractor and pipeline implementations
-   have been removed. Ruff linting and formatting checks are enforced in CI.
-3. **Docstrings:** the pipeline and extractor now have class documentation;
-   public methods, result fields, optional components, and HTTP endpoints are
-   documented with their behavior and limitations.
-4. **Import performance:** importing Zink no longer loads the inference model,
-   imports the heavy backend, or creates a replacement-data cache. Missing
-   inference packages still produce installation guidance. A fresh offline
-   import with the model already cached took approximately 0.12 seconds,
-   compared with 9.23 seconds before the change on the same machine. These
-   are single observations; subprocess tests enforce the no-initialization
-   behavior independently of timing.
-5. **Experimental directory:** the unreferenced `zink/misc` scripts and duplicate
-   unused cache helpers have been removed. Installed-distribution checks
-   verify that required subpackages and replacement data remain present.
-6. **Python and Docker:** the Docker base is Python 3.13. Unit and CPU-model
-   workflows cover Python 3.11–3.14 across Linux, macOS, and Windows. Local
-   verification and the distinction from the pending hosted matrix are
-   recorded in the validation report. The container preloads the pinned
-   published model snapshot and verifies offline inference without writing
-   an artificial model placeholder.
+### Reviewer 2
 
-Broader replacement tests also found and fixed weekday/date-range handling,
-timezone-sensitive date generation, and generated names retaining a source
-token. These have deterministic regression tests in the existing basic suite.
+1. **Documentation and README:** the documentation site already existed, and its [API](https://zink.readthedocs.io/en/latest/api.html), [tutorial](https://zink.readthedocs.io/en/latest/tutorial.html), and [related-tools comparison](https://zink.readthedocs.io/en/latest/related-tools.html) are linked prominently. Examples and docstrings now cover the public interface, pipeline/extractor classes, result fields, and optional HTTP server. The README includes supported-Python, docs-build, and coverage-workflow badges, plus a short comparison with related packages. Measured coverage reports are attached to CI runs.
+2. **Commented-out code:** obsolete extractor and pipeline implementations have been removed. Ruff linting and formatting are enforced in CI.
+3. **Import performance:** importing Zink no longer initializes the model, imports the heavy backend, or creates a replacement-data disk cache. Missing inference dependencies still produce installation guidance. Fresh offline import with an already-cached model measured about 0.12 seconds versus 9.23 seconds before the change on the same machine. These are single measurements; subprocess tests separately enforce the no-initialization contract.
+4. **Experimental directory:** unreferenced `zink/misc` scripts and duplicate unused cache helpers have been removed. Distribution checks verify required modules and bundled replacement data remain present.
+5. **Python and Docker:** Docker uses Python 3.13. Hosted unit and real-CPU integration checks passed on Python 3.11–3.14 across Linux, macOS, and Windows. The container preloads the complete pinned published model snapshot and passes offline health/redaction checks without manufacturing a model placeholder.
 
-## Release identity and verification
+Broader replacement tests also found and fixed weekday/date-range handling, timezone-sensitive bounded dates, and generated names retaining an original name token. These regressions are included in the existing basic test suite.
 
-The missing historical GitHub releases are prepared for the exact commits
-matching the published PyPI source archives:
+### Verification and releases
 
-- `0.6.4`: `2c2617c585e1387f6944fb4949c0e3e7371b8c96`
-- `0.6.5`: `690535680410e4de022356509706781dd0afe4ff`
-- `0.7.0`: `0beab1d1ceb6a0fd741088339dfd5b58560a0216`
+- **28 hosted checks passed**, including the [complete unit/CPU matrix](https://github.com/deepanwadhwa/zink/actions/runs/44547593795), [coverage](https://github.com/deepanwadhwa/zink/actions/runs/44547593629), [documentation](https://github.com/deepanwadhwa/zink/actions/runs/44547593545), [lint](https://github.com/deepanwadhwa/zink/actions/runs/44547593457), and [independent distribution installs](https://github.com/deepanwadhwa/zink/actions/runs/44547593433).
+- The full suite passed **186 tests** locally on both macOS and Linux. Hosted combined statement/branch coverage is **92.17%**. A POSIX-only timezone subprocess test is explicitly skipped on Windows.
+- [Trusted Publishing to PyPI](https://github.com/deepanwadhwa/zink/actions/runs/44549755942) succeeded. Published wheel/source hashes match the verified GitHub release assets, and a clean PyPI install passed the distribution smoke checks outside the checkout.
+- The missing historical [v0.6.4](https://github.com/deepanwadhwa/zink/releases/tag/v0.6.4), [v0.6.5](https://github.com/deepanwadhwa/zink/releases/tag/v0.6.5), and [v0.7.0](https://github.com/deepanwadhwa/zink/releases/tag/v0.7.0) GitHub releases are published against commits matching their complete original PyPI source archives. The original reviewed `4f7c41837ced05d5ef2638be07b4c95c0a62a380` snapshot is identified separately; historical tags were not moved to the new fixes.
 
-The reviewed `4f7c41837ced05d5ef2638be07b4c95c0a62a380` snapshot is later than
-the PyPI `0.7.0` archive and remains identified by its commit. The fixes are
-prepared as `0.7.1`; historical release tags will not be moved to the new code.
+For re-review:
 
-See `REVIEW_VALIDATION.md` for test counts, coverage, environments, and
-regression evidence, and `RELEASE_PREPARATION.md` for historical archive
-checksums and publication steps. Before posting, replace these filenames with
-links to the pushed files and attach the successful hosted-check and release
-URLs. The final accepted version will need its own verified archive DOI.
+```sh
+python -m pip install "zink[cpu]==0.7.1"
+```
+
+The first inference downloads approximately 2 GB of model files. GPU behavior is not claimed as verified by this CPU matrix. The accepted version's archive DOI will be verified after approval; the old README DOI refers to the earlier 0.2.1 archive.
+
+**Development disclosure:** OpenAI Codex was used in November 2026 to implement and revise these fixes, regression tests, documentation, and CI/release configuration, including span replacement, protected-text handling, and request isolation. The linked local and hosted verification covers the resulting package.

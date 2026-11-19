@@ -1,5 +1,10 @@
 # Zink release preparation
 
+Publication completed: the historical releases and Zink 0.7.1 are now published,
+the hosted checks passed, and re-review was requested. See `RELEASE_EXECUTION.md`
+for links and verified hashes. The original preparation details below record
+source identity; the acceptance-dependent archive/DOI procedure still applies.
+
 The three missing historical tags have exact matches in the published PyPI
 source archives. Version `0.7.1` is the candidate for re-review of
 [pyOpenSci submission #352](https://github.com/pyOpenSci/software-submission/issues/352).

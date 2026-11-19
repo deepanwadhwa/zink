@@ -1,9 +1,11 @@
 # Zink 0.7.1 review validation
 
-The review fixes are committed on `fix/pyopensci-review-352`. The final source
-and feature-test commit is `93a5c38648b5f4e7eea74b87cc5f97a3319ee3ca`;
-later documentation commits record verification and publication preparation.
-No branch push, GitHub release, PyPI upload, or issue reply has been made.
+The review fixes were merged through [PR #16](https://github.com/deepanwadhwa/zink/pull/16).
+Version 0.7.1 is published at release commit
+`5503065c09db1948b27af5cddb5cf6632b3839ba`. Core source/test fixes run through
+`93a5c38648b5f4e7eea74b87cc5f97a3319ee3ca`; subsequent commits add publishing
+configuration and verification records. See `RELEASE_EXECUTION.md` for the
+published artifacts, hashes, live documentation, and posted re-review request.
 
 ## Results
 
@@ -17,7 +19,7 @@ No branch push, GitHub release, PyPI upload, or issue reply has been made.
 | Core transformations | Replacer, merger, date strategy, person strategy, bundled mapping, public API, and result objects report 100% in this run |
 | Strict documentation | Sphinx HTML build with `-W --keep-going` passes; generated API and tutorial pages inspected |
 | Style and lockfile | Ruff lint, Ruff formatting, diff whitespace, and `uv lock --check` pass |
-| Workflow definitions | Five YAML workflows and their shell steps parse; referenced action tags resolve |
+| Workflow definitions | Six workflow definitions parse; referenced action tags resolve; the publishing workflow successfully ran through OIDC upload |
 | Wheel and source archive | Both build with isolated Hatchling; both install and pass the distribution smoke helper from outside the checkout |
 | Installed wheel CPU inference | Real model runs offline from an isolated wheel installation; import resolves to that environment's site-packages |
 | Docker | Python 3.13 image builds and verifies installed-package inference offline with the complete pinned snapshot |
@@ -27,10 +29,12 @@ The full suite contains 152 deterministic checks and 34 CPU-model checks.
 On Windows, the POSIX-specific Tokyo timezone subprocess check is explicitly
 skipped because `time.tzset` is unavailable.
 
-The complete GitHub-hosted Python 3.11–3.14 / Linux, macOS, and Windows matrix
-awaits the planned branch push. Local results do not claim Windows or GPU
-verification. The coverage and distribution workflows will publish their
-reports/artifacts when those hosted checks execute.
+The complete [GitHub-hosted Python 3.11–3.14 / Linux, macOS, and Windows matrix](https://github.com/deepanwadhwa/zink/actions/runs/44547593795)
+passed. All 28 hosted checks passed, including documentation, style, coverage,
+and independent distribution installation. The workflows published coverage
+and distribution artifacts. GPU behavior is not claimed as verified by this
+CPU matrix. [PyPI Trusted Publishing](https://github.com/deepanwadhwa/zink/actions/runs/44549755942)
+also succeeded, and the uploaded hashes match the verified GitHub release assets.
 
 ## Regression evidence
 
@@ -99,13 +103,10 @@ the source archive. Package contents are checked for all required subpackages
 and bundled gzip data; the wheel omits tests, and neither archive contains
 the removed experiments or generated ONNX session files.
 
-## Release gates
+## Acceptance follow-up
 
-- Run the hosted matrix after the planned push, including Windows and all CPU
-  version combinations. Keep release publication behind those results.
-- Backfill historical GitHub tags/releases using the source identities and
-  archive checksums in `RELEASE_PREPARATION.md`.
-- Publish the approved `0.7.1` artifacts, then update/post the prepared
-  `pyopensci-response.md` with real release and successful-check URLs.
-- At acceptance, verify the accepted version's archive DOI. The old README DOI
-  refers to version 0.2.1 and must not be presented as the accepted 0.7.1 archive.
+The hosted matrix, historical release backfill, 0.7.1 GitHub/PyPI publication,
+live documentation verification, and [re-review request](https://github.com/pyOpenSci/software-submission/issues/352#issuecomment-7012929949)
+are complete. Reviewers still need to approve the package. At acceptance,
+verify the editor-approved version's archive DOI. The old README DOI refers
+to version 0.2.1 and must not be presented as the accepted 0.7.1 archive.

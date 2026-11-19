@@ -2,11 +2,11 @@
 
 Tracking issue: [pyOpenSci/software-submission#352](https://github.com/pyOpenSci/software-submission/issues/352).
 
-This checklist tracks the implemented review fixes and expanded existing tests. Checked items have local implementation/verification evidence in `REVIEW_VALIDATION.md`. Unchecked items are the hosted compatibility and publication gates reserved for the planned push/release stage.
+This checklist records completed maintainer fixes, verification, and release/submission actions. See `REVIEW_VALIDATION.md` and `RELEASE_EXECUTION.md` for evidence. Reviewer approval and the accepted-version archive DOI remain external acceptance follow-up.
 
 ## Execution log
 
-- Local implementation is committed in focused increments. Hosted matrix execution, pushing, and release publication remain the planned next stage; see `REVIEW_VALIDATION.md` and `RELEASE_PREPARATION.md`.
+- Focused commits are merged through PR #16. All 28 hosted checks passed; historical releases and 0.7.1 are published on GitHub, and 0.7.1 is published on PyPI. Live latest/stable documentation is verified. A point-by-point response and re-review request are posted; see `RELEASE_EXECUTION.md`.
 - Original full-suite baseline, run from a clean archived checkout with isolated mapping files and the cached CPU model: **41 passed in 59.71 seconds** on Python 3.13.13, GLiNER 0.2.29, ONNX Runtime 1.30.0, macOS arm64. Model revision: `40349bb15d985ced384bed5c35115fd70069f4b9`.
 - Reproduced the original substring replacement, overlapping-protection, shared-request-text, and README custom-example failures before fixes. New deterministic regressions and real-model checks are being added to the existing feature tests.
 - Version `0.7.1` is prepared. The final macOS full suite passes all 186 tests with 92.17% combined line/branch coverage; deterministic base-package suites pass 152 tests on Python 3.11, 3.12, and 3.14. Historical tags will retain verified PyPI source snapshots.
@@ -212,8 +212,8 @@ Acceptance: no obsolete implementations remain in comments; retained scripts hav
 Source: [reviewer 2, code comment 5 and packaging checklist](https://github.com/pyOpenSci/software-submission/issues/352#issuecomment-6400697457).
 
 - [x] Check Python release support and actual dependency-wheel availability at implementation time. Do not equate the end of active bug-fix support with end of security support.
-- [ ] Add newer supported Python versions to `.github/workflows/python-tests.yaml` after verifying GLiNER/ONNX compatibility on each target OS. Retain the declared minimum where supported; document any deliberate support-policy change.
-- [ ] Keep the three existing OS targets. Run deterministic tests on all supported combinations and explicit real-CPU integration jobs on the combinations claimed as supported; document any reduced integration matrix and reason.
+- [x] Add newer supported Python versions to `.github/workflows/python-tests.yaml` after verifying GLiNER/ONNX compatibility on each target OS. Retain the declared minimum where supported; document any deliberate support-policy change.
+- [x] Keep the three existing OS targets. Run deterministic tests on all supported combinations and explicit real-CPU integration jobs on the combinations claimed as supported; document any reduced integration matrix and reason.
 - [x] Make model setup reproducible: record/pin the revision used for verification, use a revision-aware cache key, and audit the current dummy `pytorch_model.bin` workaround before carrying it forward.
 - [x] Add `pytest-cov` to development/test tooling; collect branch coverage for application code, publish reports, inspect uncovered changed branches, and establish a measured baseline for future regression gating.
 - [x] Preserve `tests/test_benchmark_scoring.py` and `tests/test_qib_metrics.py` in CI; avoid rerunning the expensive full Presidio benchmark unless a relevant detection/scoring claim changes.
@@ -257,6 +257,6 @@ Acceptance: historical release identity is accurate and the fixes have an unambi
 - [x] Record full-suite counts, expected skips, Python/OS/backend/model versions, strict docs/lint/build results, coverage, and Docker checks.
 - [x] Recheck the earlier dependency warning, approximate download-size warning, advanced file tutorial, and Presidio benchmark links after import/packaging changes.
 - [x] Update `pyopensci-response.md` with a review-ready response and links to the candidate release, existing documentation, and verification evidence.
-- [ ] Request re-review only after required fixes and verification are complete. Posting the response is a separate publication action.
+- [x] Request re-review only after required fixes and verification are complete. Posting the response is a separate publication action.
 
 Definition of done: every required comment has a tested fix or a documented explanation; the existing feature tests are expanded rather than bypassed; real-model and deterministic checks both pass; the release and response identify exactly what was verified.
