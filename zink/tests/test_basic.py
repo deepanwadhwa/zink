@@ -1,3 +1,7 @@
+import os
+import subprocess
+import sys
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime
 from importlib import import_module
@@ -523,7 +527,7 @@ def test_redact_custom_placeholder_reports_original_span(detections):
         (
             "10/22/2020",
             "date",
-            {"date": ["2001-05-24"], "date_between_dates": [date(2001, 5, 24)]},
+            {"random_int": [(date(2001, 5, 24) - date(1900, 1, 1)).days]},
             "2001-05-24",
         ),
         (
@@ -562,7 +566,7 @@ def test_redact_custom_placeholder_reports_original_span(detections):
         (
             "Monday",
             "weekday",
-            {"date": ["2001-05-24"], "day_of_week": ["Monday", "Friday"]},
+            {"day_of_week": ["Monday", "Friday"]},
             "Friday",
         ),
         (
@@ -600,16 +604,14 @@ def test_date_fallback_honors_both_ends_of_its_date_range(
     date_module = import_module("zink.replacer.rdate")
     start_date, end_date = datetime(2001, 6, 1), datetime(2001, 6, 4)
 
-    def pick_date(*, date_start, date_end):
-        assert (date_start, date_end) == (start_date, end_date)
-        return (date_end if pick_upper else date_start).date()
+    def pick_offset(*, min, max):
+        assert (min, max) == (0, 3)
+        return max if pick_upper else min
 
     monkeypatch.setattr(
         date_module,
         "Faker",
-        lambda: SimpleNamespace(
-            month_name=lambda: "January", date_between_dates=pick_date
-        ),
+        lambda: SimpleNamespace(month_name=lambda: "January", random_int=pick_offset),
     )
     strategy = date_module.DateReplacementStrategy(
         start_date=start_date, end_date=end_date
@@ -623,16 +625,14 @@ def test_numeric_date_honors_range_and_never_reuses_source_date(monkeypatch, ran
     date_module = import_module("zink.replacer.rdate")
     start_date, end_date = datetime(2001, 6, 1), datetime(2001, 6, range_end)
 
-    def choose_source_date(*, date_start, date_end):
-        assert (date_start, date_end) == (start_date, end_date)
-        return start_date.date()
+    def choose_source_offset(*, min, max):
+        assert (min, max) == (0, range_end - 1)
+        return min
 
     monkeypatch.setattr(
         date_module,
         "Faker",
-        lambda: SimpleNamespace(
-            date=lambda: "1990-01-01", date_between_dates=choose_source_date
-        ),
+        lambda: SimpleNamespace(random_int=choose_source_offset),
     )
     strategy = date_module.DateReplacementStrategy(
         start_date=start_date, end_date=end_date
@@ -644,6 +644,53 @@ def test_numeric_date_honors_range_and_never_reuses_source_date(monkeypatch, ran
         assert result is None
     else:
         assert date(2001, 6, 1) < date.fromisoformat(result) <= date(2001, 6, range_end)
+
+
+@pytest.mark.parametrize("pick_end", [False, True])
+def test_numeric_date_excludes_both_readings_of_ambiguous_slash_date(
+    monkeypatch, pick_end
+):
+    date_module = import_module("zink.replacer.rdate")
+    start, end = date(2001, 1, 6), date(2001, 6, 1)
+    monkeypatch.setattr(
+        date_module,
+        "Faker",
+        lambda: SimpleNamespace(
+            random_int=lambda *, min, max: max if pick_end else min
+        ),
+    )
+
+    value = date_module.DateReplacementStrategy(start, end).replace(
+        {"text": "06/01/2001"}
+    )
+
+    assert start < date.fromisoformat(value) < end
+
+
+def test_date_replacement_rejects_reversed_date_range():
+    date_module = import_module("zink.replacer.rdate")
+    with pytest.raises(ValueError, match="start_date must be on or before end_date"):
+        date_module.DateReplacementStrategy(datetime(2025, 1, 2), date(2025, 1, 1))
+
+
+@pytest.mark.skipif(
+    not hasattr(time, "tzset"), reason="subprocess requires POSIX timezone support"
+)
+def test_single_day_iso_replacement_keeps_calendar_date_in_tokyo():
+    script = """
+from datetime import datetime
+from zink.replacer.rdate import DateReplacementStrategy
+
+only_date = datetime(1900, 1, 1)
+assert only_date.astimezone().utcoffset().total_seconds() > 0
+assert DateReplacementStrategy(only_date, only_date).replace({'text': 'unknown'}) == '1900-01-01'
+"""
+    subprocess.run(
+        [sys.executable, "-c", script],
+        check=True,
+        env={**os.environ, "TZ": "Asia/Tokyo"},
+        timeout=30,
+    )
 
 
 @pytest.mark.parametrize(

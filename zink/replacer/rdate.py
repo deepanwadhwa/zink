@@ -60,8 +60,12 @@ class DateReplacementStrategy(ReplacementStrategy):
     def __init__(
         self, start_date=datetime(1900, 1, 1), end_date=datetime(2100, 12, 31)
     ):
-        self.start_date = start_date
-        self.end_date = end_date
+        self.start_date = (
+            start_date.date() if isinstance(start_date, datetime) else start_date
+        )
+        self.end_date = end_date.date() if isinstance(end_date, datetime) else end_date
+        if self.start_date > self.end_date:
+            raise ValueError("start_date must be on or before end_date")
         self.faker = Faker()
 
     def replace(self, entity):
@@ -102,18 +106,14 @@ class DateReplacementStrategy(ReplacementStrategy):
 
     def _bounded_iso_date(self, original):
         originals = _numeric_dates(original)
-        candidate = self.faker.date_between_dates(
-            date_start=self.start_date, date_end=self.end_date
-        )
+        start, end = self.start_date, self.end_date
+        # Calendar offsets avoid timezone and timestamp conversions in Faker.
+        offset = self.faker.random_int(min=0, max=(end - start).days)
+        candidate = start + timedelta(days=offset)
         if candidate not in originals:
             return candidate.isoformat()
 
         # Choose a different in-range date if the provider drew the source date.
-        start, end = self.start_date, self.end_date
-        if isinstance(start, datetime):
-            start = start.date()
-        if isinstance(end, datetime):
-            end = end.date()
         while start in originals:
             if start >= end:
                 return None
