@@ -198,6 +198,88 @@ def test_cached_extraction_respects_each_calls_protection(detections):
     assert calls == ["single"]
 
 
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"use_cache": False},
+        {"use_cache": True},
+        {"auto_parallel": True, "chunk_size": 12},
+    ],
+    ids=["uncached", "cached", "chunked"],
+)
+def test_protected_prediction_does_not_hide_an_outside_detection(
+    fake_extractor,
+    options,
+):
+    labels = ("person", "full name", "family name")
+    calls = []
+
+    def predict(text, categories):
+        assert tuple(categories) == labels
+        calls.append(text)
+        if text == "arrived.":
+            return []
+        assert text in ("Alice Jones arrived.", "Alice Jones ")
+        return [
+            {
+                "start": start,
+                "end": end,
+                "text": text[start:end],
+                "label": label,
+                "score": score,
+            }
+            for start, end, label, score in [
+                (0, 5, "person", 0.95),
+                (0, 11, "full name", 0.8),
+                (6, 11, "family name", 0.95),
+            ]
+        ]
+
+    fake_extractor(predict)
+    result = zn.redact("*Alice* Jones arrived.", labels, **options)
+
+    assert result.anonymized_text == "Alice family name_REDACTED arrived."
+    assert result.features["num_replacements"] == 1
+    [replacement] = result.replacements
+    assert (replacement.original, replacement.start, replacement.end) == (
+        "Jones",
+        6,
+        11,
+    )
+
+    if options.get("use_cache"):
+        second = zn.redact("Alice *Jones* arrived.", labels, **options)
+        assert second.anonymized_text == "person_REDACTED Jones arrived."
+        assert calls == ["Alice Jones arrived."]
+
+
+def test_redaction_does_not_merge_detections_across_protection(fake_extractor):
+    def predict(text, labels):
+        assert text == "AnnxBob arrived."
+        assert tuple(labels) == ("person",)
+        return [
+            {
+                "start": start,
+                "end": end,
+                "text": text[start:end],
+                "label": "person",
+                "score": 0.9,
+            }
+            for start, end in [(0, 3), (4, 7)]
+        ]
+
+    fake_extractor(predict)
+
+    result = zn.redact("Ann*x*Bob arrived.", ("person",), use_cache=False)
+
+    assert result.anonymized_text == "person_REDACTEDxperson_REDACTED arrived."
+    assert result.features["num_replacements"] == 2
+    assert [replacement.original for replacement in result.replacements] == [
+        "Ann",
+        "Bob",
+    ]
+
+
 def test_protection_can_cross_a_parallel_chunk_boundary(fake_extractor):
     text = "Bob met Alice Smith."
 

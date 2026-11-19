@@ -37,21 +37,20 @@ class Pseudonymizer:
         )
 
     def _single_pass_extraction(self, text, categories):
-        """Plain extraction & merging (uncached)."""
-        raw_ents = self.extractor.predict2(text, labels=categories)
-        return self.merger.merge(raw_ents, text)
+        """Return raw detections before protection filtering or span merging."""
+        return self.extractor.predict2(text, labels=categories)
 
     @lru_cache(maxsize=128)
     def _cached_single_pass_extraction(self, text, categories_tuple):
         """
-        Cache extraction by input and labels; ``None`` preserves default labels.
+        Cache raw detections; each call applies its own protection and merging.
         """
 
         return self._single_pass_extraction(text, categories_tuple)
 
     def _parallel_extraction(self, text, chunk_size, max_workers, categories):
         """
-        Extract chunks without caching, then merge in original-text coordinates.
+        Return raw chunk detections in original-text coordinates without caching.
         """
         all_ents = extract_entities_in_parallel(
             text,
@@ -61,7 +60,41 @@ class Pseudonymizer:
             extractor=self.extractor,
         )
         all_ents.sort(key=lambda e: e["start"])
-        return self.merger.merge(all_ents, text)
+        return all_ents
+
+    def _merge_for_redaction(self, entities, text, protected_spans):
+        """Merge detections within unprotected regions, never across a marker.
+
+        A broad detection touching protection is discarded before merging, so
+        it cannot hide a separate detection outside the protected interval.
+        """
+        if not protected_spans:
+            return self.merger.merge(entities, text)
+
+        merged = []
+        region_start = 0
+        for protected_start, protected_end in [
+            *protected_spans,
+            (len(text), len(text)),
+        ]:
+            region_entities = [
+                entity
+                for entity in entities
+                if region_start <= entity["start"] < entity["end"] <= protected_start
+            ]
+            if region_entities:
+                region_merged = self.merger.merge(region_entities, text)
+                if any(
+                    not region_start
+                    <= entity["start"]
+                    < entity["end"]
+                    <= protected_start
+                    for entity in region_merged
+                ):
+                    raise ValueError("Merged entity crosses a protected boundary")
+                merged.extend(region_merged)
+            region_start = protected_end
+        return merged
 
     def redact(
         self,
@@ -94,18 +127,10 @@ class Pseudonymizer:
             else:
                 merged = self._single_pass_extraction(clean_text, categories)
 
-        # 3. Filter out entities that overlap with protected spans
-        filtered_entities = []
-        for ent in merged:
-            is_protected = False
-            ent_start, ent_end = ent["start"], ent["end"]
-            for p_start, p_end in protected_spans:
-                # Check for overlap
-                if ent_start < p_end and ent_end > p_start:
-                    is_protected = True
-                    break
-            if not is_protected:
-                filtered_entities.append(ent)
+        # Filter raw predictions before merging, and keep protected gaps intact.
+        filtered_entities = self._merge_for_redaction(
+            merged, clean_text, protected_spans
+        )
 
         # 4. Redact the clean text
         with _MAPPING_LOCK:
@@ -284,7 +309,7 @@ class Pseudonymizer:
             else:
                 merged = self._single_pass_extraction(text, categories)
 
-        merged = [dict(entity) for entity in merged]
+        merged = [dict(entity) for entity in self.merger.merge(merged, text)]
         anonymized_text = self._replace_entities(
             text, merged, user_replacements, ensure_consistency
         )
@@ -337,7 +362,9 @@ class Pseudonymizer:
         else:
             all_entities = self._single_pass_extraction(text, categories)
 
-        all_entities = [dict(entity) for entity in all_entities]
+        all_entities = [
+            dict(entity) for entity in self.merger.merge(all_entities, text)
+        ]
         anonymized_text = self._replace_entities(
             text, all_entities, user_replacements, ensure_consistency
         )
