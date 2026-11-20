@@ -10,6 +10,7 @@ from zink.merger import EntityMerger
 from zink.replacer import EntityReplacer
 from zink.result import PseudonymizationResult, ReplacementDetail
 from zink.utils.paths import get_default_mapping_path
+from zink.utils.mapping import save_mapping
 from .passage_processors import extract_entities_in_parallel
 
 _MAPPING_LOCK = RLock()
@@ -266,8 +267,7 @@ class Pseudonymizer:
                 for (label, original_text), ent_id in entity_to_id_map.items():
                     serializable_mapping[label][original_text] = ent_id
 
-                with open(mapping_file, "w") as f:
-                    json.dump(serializable_mapping, f, indent=2)
+                save_mapping(mapping_file, serializable_mapping)
             except Exception as e:
                 print(f"Warning: Failed to save mapping file {mapping_file}: {e}")
 

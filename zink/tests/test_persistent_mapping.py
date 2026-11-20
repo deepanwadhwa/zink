@@ -1,5 +1,7 @@
 import json
+import os
 import re
+import stat
 from pathlib import Path
 
 import pytest
@@ -214,3 +216,56 @@ def test_numbered_exhaustion_does_not_partially_persist_a_request(
     # The attempted allocation did not consume the last available ID.
     result = zn.redact("Carol", ("person",), numbered_entities=True)
     assert result.anonymized_text == "person_9999_REDACTED"
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX file permission bits")
+@pytest.mark.parametrize("mask", [0o022, 0o077])
+@pytest.mark.parametrize("existing", [False, True])
+def test_mapping_is_private_on_creation_and_rewrite(
+    numbered_predictor, mapping_file, mask, existing
+):
+    if existing:
+        mapping_file.write_text('{"person": {"Alice": "1234"}}', encoding="utf-8")
+        mapping_file.chmod(0o644)
+    previous_mask = os.umask(mask)
+    try:
+        result = zn.redact("Alice", ("person",), numbered_entities=True)
+    finally:
+        os.umask(previous_mask)
+
+    assert stat.S_IMODE(mapping_file.stat().st_mode) == 0o600
+    stored = json.loads(mapping_file.read_text(encoding="utf-8"))
+    assert result.anonymized_text == f"person_{stored['person']['Alice']}_REDACTED"
+    if existing:
+        assert stored["person"]["Alice"] == "1234"
+    assert list(mapping_file.parent.iterdir()) == [mapping_file]
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX directory permission bits")
+def test_new_mapping_directory_is_private_under_permissive_umask(monkeypatch, tmp_path):
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
+    previous_mask = os.umask(0o022)
+    try:
+        path = Path(get_default_mapping_path())
+    finally:
+        os.umask(previous_mask)
+    assert stat.S_IMODE(path.parent.stat().st_mode) == 0o700
+
+
+@pytest.mark.parametrize("failure", ["serialization", "replacement"])
+def test_failed_mapping_write_preserves_old_file_and_removes_temporary(
+    numbered_predictor, mapping_file, monkeypatch, capsys, failure
+):
+    original = '{"person": {"Alice": "1234"}}'
+    mapping_file.write_text(original, encoding="utf-8")
+
+    def fail(*args, **kwargs):
+        raise OSError("simulated write failure")
+
+    target = "json.dump" if failure == "serialization" else "os.replace"
+    monkeypatch.setattr(f"zink.utils.mapping.{target}", fail)
+    zn.redact("Bob", ("person",), numbered_entities=True)
+
+    assert mapping_file.read_text(encoding="utf-8") == original
+    assert list(mapping_file.parent.iterdir()) == [mapping_file]
+    assert "Failed to save mapping file" in capsys.readouterr().out

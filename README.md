@@ -140,6 +140,9 @@ Analysis for Report for John Doe from Acme Inc. is complete.
 Use `numbered_entities=True` to reuse placeholders for a detected label and
 source text across calls and sessions. The `~/.zink/mapping.json` file stores
 the original detected text in plain JSON. Keep the file private.
+On POSIX systems, Zink writes it atomically with owner-only permissions
+(`0600`), including when updating an existing mapping. New mapping directories
+use `0700`. On Windows, restrict access through the directory's access controls.
 
 Numbered placeholders support 9,000 distinct source strings per label across
 calls and sessions. Existing IDs remain reusable at capacity; assigning a new

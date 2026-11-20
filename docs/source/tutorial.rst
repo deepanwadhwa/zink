@@ -88,7 +88,10 @@ label and source text across calls.
    print(zink.where_mapping_file())
 
 The mapping file lives at ``~/.zink/mapping.json`` and stores original text in
-plain JSON. Restrict access to it and keep it out of published datasets. Call
+plain JSON. On POSIX, mapping writes use owner-only permissions (``0600``),
+including updates to an existing file, and new mapping directories use ``0700``.
+Windows access depends on the directory's access controls. Restrict access to
+the mapping and keep it out of published datasets. Call
 :func:`zink.refresh_mapping_file` only when you intentionally want to discard
 the mapping. The numbered placeholders can be linked back to the original
 text through this file.
