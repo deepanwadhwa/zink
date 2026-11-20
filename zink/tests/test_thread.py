@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+import re
 from threading import Event
 
 import pytest
@@ -167,12 +168,17 @@ def test_failed_worker_does_not_affect_later_extraction():
     ("text", "size", "expected"),
     [
         ("", 2, []),
-        ("é🙂ABC", 2, [("é🙂", 0), ("AB", 2), ("C", 4)]),
-        ("abcdef", 3, [("abc", 0), ("def", 3)]),
+        ("é🙂 ABC", 2, [("é🙂 ", 0), ("ABC", 3)]),
+        ("abcdef", 3, [("abcdef", 0)]),
+        ("Anne-Marie St. John", 3, [("Anne-Marie ", 0), ("St. ", 11), ("John", 15)]),
+        ("A\tB\nC", 1, [("A\t", 0), ("B\n", 2), ("C", 4)]),
+        ("\t \n", 1, [("\t \n", 0)]),
     ],
 )
 def test_chunk_text_uses_character_offsets(text, size, expected):
     assert passage_processors.chunk_text(text, size) == expected
+    assert "".join(chunk for chunk, _ in expected) == text
+    assert all(text[start : start + len(chunk)] == chunk for chunk, start in expected)
 
 
 @pytest.mark.parametrize("size", [0, -1])
@@ -184,27 +190,114 @@ def test_chunk_text_rejects_nonpositive_size(size):
 def test_parallel_passage_offsets_and_order_when_last_chunk_finishes_first(monkeypatch):
     last_finished = Event()
     expected_label = ("person",)
-    first = _entity("Ana ", 0, 3, "person")
-    last = _entity("Bob.", 0, 3, "person")
+    passage = "Ana " + "x " * 38 + "Bob."
+    suffix = passage[48:]
+    first = _entity(passage, 0, 3, "person")
+    last = _entity(suffix, 32, 35, "person", 0.9)
 
     class Executor(ThreadPoolExecutor):
         def submit(self, fn, text, *args, **kwargs):
             future = super().submit(fn, text, *args, **kwargs)
-            if text == "Bob.":
+            if text == suffix:
                 future.add_done_callback(lambda _: last_finished.set())
             return future
 
     class Extractor:
         def predict(self, text, labels):
             assert labels == expected_label
-            if text == "Ana ":
+            if text == passage:
                 assert last_finished.wait(10), "Last chunk did not finish first"
-                return [first]
-            assert text == "Bob."
+                return [first, _entity(text, 80, 83, "person", 0.7)]
+            assert text == suffix
             return [last]
 
     monkeypatch.setattr(passage_processors, "ThreadPoolExecutor", Executor)
     assert passage_processors.extract_entities_in_parallel(
-        "Ana Bob.", 4, 2, expected_label, extractor=Extractor()
-    ) == [first, {**last, "start": 4, "end": 7}]
-    assert last["start"] == 0 and last["end"] == 3
+        passage, 80, 2, expected_label, extractor=Extractor()
+    ) == [first, {**last, "start": 80, "end": 83}]
+    assert last["start"] == 32 and last["end"] == 35
+
+
+@pytest.mark.parametrize(
+    "entrypoint", [zink.redact, zink.replace, zink.replace_with_my_data]
+)
+@pytest.mark.parametrize("size", [1, 7, 11, 16, 20, 32])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Alice Smith", "Anne-Marie Smith", "St. John",
+        "J. R. Smith", "李 小明", "Jean—Luc Picard",
+    ],
+)
+def test_chunk_context_preserves_complete_names_and_original_offsets(
+    fake_extractor, entrypoint, size, name
+):
+    text = f"Before {name} arrived."
+
+    def predict(chunk, labels):
+        assert tuple(labels) == ("person",)
+        return [
+            _entity(chunk, match.start(), match.end(), "person")
+            for match in re.finditer(re.escape(name), chunk)
+        ]
+
+    fake_extractor(predict)
+    kwargs = dict(categories=("person",), auto_parallel=True, chunk_size=size)
+    if entrypoint is zink.redact:
+        kwargs["placeholder"] = "[person]"
+    else:
+        kwargs["user_replacements"] = {"person": "[person]"}
+    result = entrypoint(text, **kwargs)
+
+    assert result.anonymized_text == "Before [person] arrived."
+    assert result.features["num_replacements"] == 1
+    (detail,) = result.replacements
+    if entrypoint is zink.redact:
+        assert (detail.start, detail.end, detail.original) == (7, 7 + len(name), name)
+    else:
+        assert (detail["start"], detail["end"], detail["text"]) == (
+            7, 7 + len(name), name
+        )
+
+
+def test_context_only_detection_does_not_escape_its_core():
+    passage = "Ana " + "x " * 38 + "Bob."
+
+    class Extractor:
+        def predict(self, text, labels):
+            # Bob lies entirely outside the first core. Its own window finds
+            # nothing, so context alone must not generate a second owner.
+            return [_entity(text, 80, 83, "person")] if text == passage else []
+
+    assert passage_processors.extract_entities_in_parallel(
+        passage, chunk_size=80, extractor=Extractor()
+    ) == []
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize(
+    "entrypoint", [zink.redact, zink.replace, zink.replace_with_my_data]
+)
+@pytest.mark.parametrize("size", [11, 16, 17, 1000])
+def test_real_onnx_redacts_name_across_chunk_boundaries(entrypoint, size):
+    prefix = "We waited. " * 89 + "Then " if size == 1000 else ""
+    text = prefix + "I met Alice Smith yesterday."
+    kwargs = dict(categories=("person",), auto_parallel=True, chunk_size=size)
+    if entrypoint is zink.redact:
+        kwargs["placeholder"] = "[person]"
+    else:
+        kwargs["user_replacements"] = {"person": "[person]"}
+    result = entrypoint(text, **kwargs)
+
+    assert result.anonymized_text == prefix + "I met [person] yesterday."
+    assert result.features["num_replacements"] == 1
+    (detail,) = result.replacements
+    start = len(prefix) + 6
+    if entrypoint is zink.redact:
+        assert (detail.start, detail.end, detail.original) == (
+            start, start + 11, "Alice Smith"
+        )
+    else:
+        assert (detail["start"], detail["end"], detail["text"]) == (
+            start, start + 11, "Alice Smith"
+        )

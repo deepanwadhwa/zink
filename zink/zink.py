@@ -41,7 +41,8 @@ def redact(
         replacer: Optional ``EntityReplacer``-compatible replacement component.
         auto_parallel (bool): Extract long text in chunks when it exceeds
             ``chunk_size``. Defaults to false.
-        chunk_size (int): Chunk threshold in characters.
+        chunk_size (int): Soft chunk target in characters. Chunks finish whole
+            words and add overlapping context for detection across boundaries.
         max_workers (int): Maximum worker threads for parallel extraction.
         numbered_entities (bool): Use stable numbered placeholders persisted in
             ``~/.zink/mapping.json``. This file contains original sensitive text.
@@ -116,7 +117,8 @@ def replace(
         replacer: Optional ``EntityReplacer``-compatible replacement component.
         auto_parallel (bool): Request chunked extraction for long text. Text
             longer than ``chunk_size`` is chunked regardless of this setting.
-        chunk_size (int): Chunk threshold in characters.
+        chunk_size (int): Soft chunk target in characters. Chunks finish whole
+            words and add overlapping context for detection across boundaries.
         max_workers (int): Maximum worker threads for parallel extraction.
 
     Returns:
@@ -181,7 +183,8 @@ def replace_with_my_data(
         merger: Optional object providing ``merge(entities, text)``.
         replacer: Optional ``EntityReplacer``-compatible replacement component.
         auto_parallel (bool): Request chunked extraction for long text.
-        chunk_size (int): Chunk threshold in characters. Longer text is chunked.
+        chunk_size (int): Soft chunk target in characters. Longer text is chunked
+            with whole words and overlapping context across boundaries.
         max_workers (int): Maximum worker threads for parallel extraction.
 
     Returns:

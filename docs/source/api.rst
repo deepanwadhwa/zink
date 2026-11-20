@@ -96,8 +96,21 @@ Passage processing
 ------------------
 
 The low-level passage helpers return detections with offsets in the original
-passage. Choose chunk boundaries carefully since splitting an entity can
-prevent the model from recognizing it.
+passage. ``chunk_size`` is a soft target in characters: core chunks extend to
+finish a word and its trailing whitespace. Periods, hyphens, and dashes within
+words are preserved. Inference adds 32 to 128 characters of context on each side
+of each core, extended to whole words, so multiword entities can be recognized
+across boundaries. Identical windows are processed once, and duplicate spans
+keep their highest score. Only detections intersecting a window's core are kept.
+
+Context reduces boundary losses but model detection remains imperfect, and
+entities longer than the available context can still be missed or fragmented.
+Review sensitive output before sharing it. Extremely long whitespace-free input
+can exceed the backend's input limits even though the chunker keeps it intact.
+
+``redact`` uses chunking when ``auto_parallel=True`` and the text exceeds the
+target. Both replacement APIs automatically chunk text exceeding the target,
+including when ``auto_parallel=False``.
 
 .. autofunction:: zink.passage_processors.chunk_text
 

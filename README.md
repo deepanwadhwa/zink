@@ -104,6 +104,17 @@ print(result.anonymized_text)
 Alice works at OpenAI and drives a Honda.
 ```
 
+With `ensure_consistency=True` (the default), each detected label and exact
+source string gets a consistent replacement within the call. The same string
+under different labels has independent replacements: a person named Jordan
+and a location named Jordan can become Alice and Venice, respectively.
+
+For long text, chunking preserves whole words and adds overlapping context to
+help recognize entities across boundaries. `chunk_size` is a soft character
+target; inference windows can be longer. Both replacement APIs automatically
+chunk text exceeding the target; redaction requires `auto_parallel=True`.
+Model predictions can still miss sensitive text, so review the output.
+
 ### 3. Shielding LLM and API Calls
 The `@zink.shield` decorator redacts detected spans in one argument before
 passing it to a function. It restores those values in the returned string.

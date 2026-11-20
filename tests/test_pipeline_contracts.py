@@ -72,11 +72,13 @@ def test_public_replacement_honors_custom_components(entrypoint, ensure_consiste
 
 def test_parallel_public_redaction_honors_custom_extractor_and_merger():
     text = "Ana Bob."
+    calls = []
 
     def extract(chunk, labels):
         assert labels == ("person",)
-        assert chunk in ("Ana ", "Bob.")
-        return [_entity(chunk, 0, 3)]
+        assert chunk == text
+        calls.append(chunk)
+        return [_entity(chunk, 0, 3), _entity(chunk, 4, 7)]
 
     def keep_only_bob(entities, passage):
         assert passage == text
@@ -95,6 +97,7 @@ def test_parallel_public_redaction_honors_custom_extractor_and_merger():
     )
 
     assert result.anonymized_text == "Ana [person]."
+    assert calls == [text]  # Identical context windows are inferred only once.
     assert result.features["num_replacements"] == 1
     (detail,) = result.replacements
     assert (detail.original, detail.start, detail.end, detail.pseudonym) == (
