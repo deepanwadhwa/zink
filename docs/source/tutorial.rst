@@ -47,11 +47,9 @@ leaves detections that overlap a protected span intact.
 To replace detected spans with your own values, pass ``user_replacements``.
 Unmapped labels use Zink's default replacement strategy. When you provide a
 list, Zink selects one value from it. With ``ensure_consistency=True``
-(the default), repeated detected text with the same label shares a replacement
-within the call. Different labels have independent replacements: if ``Jordan``
-is detected as a person and a location, ``{"person": "Alice", "location": "Venice"}``
-produces ``Alice`` for the person and ``Venice`` for the location. Source text
-matching is case sensitive; label matching is case insensitive.
+(the default), repeated exact source text shares a replacement within the call,
+including when detected under different labels. The first occurrence chooses
+the replacement. This preserves v0.7.1 behavior when upgrading to v0.7.2.
 Only the detected spans change.
 
 .. code-block:: python
@@ -66,6 +64,21 @@ Only the detected spans change.
        },
    )
    print(result.anonymized_text)
+
+Starting in v0.7.2, explicitly pass ``consistency_scope="label"`` with
+``ensure_consistency=True`` for independent consistency per label and source
+text. If ``Jordan`` is detected as a person and a location, replacement rules
+``{"person": "Alice", "location": "Venice"}`` can then produce ``Alice`` for
+the person and ``Venice`` for the location. Omitting the scope (or using
+``"text"``) retains the original cross-label reuse. Source matching is case
+sensitive and label matching is case insensitive.
+
+``ensure_consistency=False`` chooses independently for every detected span,
+even within one label; it is different from label-specific consistency when
+using candidate lists or generated values. Scope has no effect when consistency
+is disabled. Both replacement APIs support the new keyword; v0.7.1 and older
+versions reject it with ``TypeError``. See :ref:`replacement-consistency-versions`
+for the version and output table.
 
 Use :func:`zink.replace` for built-in synthetic values. Synthetic replacement
 is still model dependent and should receive the same manual review.

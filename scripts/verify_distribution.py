@@ -87,6 +87,39 @@ def main():
     assert custom.anonymized_text == "Eve met Eve."
     assert custom.features["num_replacements"] == 2
 
+    def predict_jordan(text, labels=None):
+        return [
+            {
+                "text": "Jordan",
+                "label": label,
+                "start": start,
+                "end": start + 6,
+                "score": 1.0,
+            }
+            for start, label in ((0, "person"), (11, "location"))
+        ]
+
+    jordan_extractor = SimpleNamespace(predict2=predict_jordan, predict=predict_jordan)
+    for replace in (zink.replace, zink.replace_with_my_data):
+        for options, expected in (
+            ({}, "Alice met Alice."),
+            ({"consistency_scope": "text"}, "Alice met Alice."),
+            ({"consistency_scope": "label"}, "Alice met Venice."),
+            ({"ensure_consistency": False}, "Alice met Venice."),
+        ):
+            result = replace(
+                "Jordan met Jordan.",
+                categories=("person", "location"),
+                user_replacements={"person": "Alice", "location": "Venice"},
+                extractor=jordan_extractor,
+                **options,
+            )
+            assert result.anonymized_text == expected, (
+                replace.__name__,
+                options,
+                result,
+            )
+
     bundled = set(load_mapping()["car brand"])
     fallback = zink.replace("Testmobile arrived.", ["car brand"], extractor=extractor)
     assert fallback.anonymized_text in {f"{name} arrived." for name in bundled}

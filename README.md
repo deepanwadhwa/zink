@@ -104,10 +104,48 @@ print(result.anonymized_text)
 Alice works at OpenAI and drives a Honda.
 ```
 
-With `ensure_consistency=True` (the default), each detected label and exact
-source string gets a consistent replacement within the call. The same string
-under different labels has independent replacements: a person named Jordan
-and a location named Jordan can become Alice and Venice, respectively.
+#### Consistency and version compatibility
+
+`ensure_consistency=True` keeps the behavior of v0.7.1: repeated exact source
+text shares one replacement across labels within the call. The first detected
+occurrence chooses that replacement, even if later occurrences have a different
+label and a different configured replacement. Upgrading to v0.7.2 keeps this
+default.
+
+**New in v0.7.2:** opt into label-specific reuse with
+`ensure_consistency=True, consistency_scope="label"`. A person named Jordan
+and a location named Jordan can then become Alice and Venice independently.
+Labels are case insensitive; source text matching is case sensitive.
+
+For `Jordan met Jordan.`, assuming the detections are person then location and
+the replacement rules are `{"person": "Alice", "location": "Venice"}`:
+
+| Version | Arguments | Result |
+| --- | --- | --- |
+| v0.7.1 | `ensure_consistency=True` (default) | `Alice met Alice.` |
+| v0.7.2 | `ensure_consistency=True`, scope omitted or `"text"` | `Alice met Alice.` |
+| v0.7.2 | `ensure_consistency=True, consistency_scope="label"` | `Alice met Venice.` |
+| v0.7.1 / v0.7.2 | `ensure_consistency=False` | `Alice met Venice.` |
+
+With `ensure_consistency=False`, each detected occurrence chooses independently,
+including repeated text within the same label. Lists and generated values may
+therefore differ between mentions. In v0.7.2 the scope has no effect in this
+mode. Older versions do not accept `consistency_scope`; passing it raises
+`TypeError`.
+
+```python
+import zink as zn
+
+# Requires v0.7.2. Actual output depends on the detected labels.
+result = zn.replace_with_my_data(
+    "Jordan met Jordan.",
+    categories=("person", "location"),
+    user_replacements={"person": "Alice", "location": "Venice"},
+    ensure_consistency=True,
+    consistency_scope="label",
+)
+print(result.anonymized_text)
+```
 
 For long text, chunking preserves whole words and adds overlapping context to
 help recognize entities across boundaries. `chunk_size` is a soft character

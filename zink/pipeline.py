@@ -8,6 +8,7 @@ from threading import RLock
 from zink.extractor import _DEFAULT_EXTRACTOR
 from zink.merger import EntityMerger
 from zink.replacer import EntityReplacer
+from zink.replacer.replacer import _validate_consistency_scope
 from zink.result import PseudonymizationResult, ReplacementDetail
 from zink.utils.paths import get_default_mapping_path
 from zink.utils.mapping import save_mapping
@@ -303,13 +304,18 @@ class Pseudonymizer:
         auto_parallel=False,
         chunk_size=1000,
         max_workers=4,
+        *,
+        consistency_scope="text",
     ):
         """
         Replace detected spans using a per-call consistent or independent mapping.
 
         See :func:`zink.replace`. Long text is chunked when it exceeds
         ``chunk_size``. Returned entity dictionaries are private to this result.
+        Consistency defaults to exact source text across labels, as in v0.7.1.
+        Set ``consistency_scope="label"`` to opt into label-specific reuse.
         """
+        _validate_consistency_scope(consistency_scope)
         if len(text) > chunk_size:
             auto_parallel = True
         if auto_parallel and len(text) > chunk_size:
@@ -326,7 +332,7 @@ class Pseudonymizer:
 
         merged = [dict(entity) for entity in self.merger.merge(merged, text)]
         anonymized_text = self._replace_entities(
-            text, merged, user_replacements, ensure_consistency
+            text, merged, user_replacements, ensure_consistency, consistency_scope
         )
         return PseudonymizationResult(
             original_text=text,
@@ -336,12 +342,25 @@ class Pseudonymizer:
         )
 
     def _replace_entities(
-        self, text, merged_entities, user_replacements=None, ensure_consistency=True
+        self,
+        text,
+        merged_entities,
+        user_replacements=None,
+        ensure_consistency=True,
+        consistency_scope="text",
     ):
         """
         Perform the actual replacements, ensuring consistency if requested.
         """
         if ensure_consistency:
+            if consistency_scope == "label":
+                return self.replacer.replace_entities_ensure_consistency(
+                    merged_entities,
+                    text,
+                    user_replacements,
+                    consistency_scope="label",
+                )
+            # Keep the old three-argument component protocol for default calls.
             return self.replacer.replace_entities_ensure_consistency(
                 merged_entities, text, user_replacements
             )
@@ -359,12 +378,17 @@ class Pseudonymizer:
         auto_parallel=False,
         chunk_size=1000,
         max_workers=4,
+        *,
+        consistency_scope="text",
     ):
         """
         Replace detected spans with required user data, without caching extraction.
 
         See :func:`zink.replace_with_my_data` for the arguments and result fields.
+        Consistency defaults to exact source text across labels, as in v0.7.1.
+        Set ``consistency_scope="label"`` to opt into label-specific reuse.
         """
+        _validate_consistency_scope(consistency_scope)
         if len(text) > chunk_size:
             auto_parallel = True
         if user_replacements is None or not user_replacements:
@@ -381,7 +405,7 @@ class Pseudonymizer:
             dict(entity) for entity in self.merger.merge(all_entities, text)
         ]
         anonymized_text = self._replace_entities(
-            text, all_entities, user_replacements, ensure_consistency
+            text, all_entities, user_replacements, ensure_consistency, consistency_scope
         )
         return PseudonymizationResult(
             original_text=text,
