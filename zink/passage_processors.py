@@ -7,11 +7,7 @@ from zink.extractor import _DEFAULT_EXTRACTOR
 
 def _word_end(text, end):
     """Finish the current whitespace-delimited token and its trailing space."""
-    while (
-        end < len(text)
-        and not text[end - 1].isspace()
-        and not text[end].isspace()
-    ):
+    while end < len(text) and not text[end - 1].isspace() and not text[end].isspace():
         end += 1
     while end < len(text) and text[end].isspace():
         end += 1
@@ -103,7 +99,9 @@ def extract_entities_in_parallel(
                     continue
                 key = (entity["start"], entity["end"], entity["label"])
                 previous = unique.get(key)
-                if previous is None or entity.get("score", 1) > previous.get("score", 1):
+                if previous is None or entity.get("score", 1) > previous.get(
+                    "score", 1
+                ):
                     unique[key] = entity
         return sorted(
             unique.values(),

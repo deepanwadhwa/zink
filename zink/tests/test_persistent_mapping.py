@@ -194,9 +194,10 @@ def test_last_numbered_id_is_available_without_collision_retries(
     _occupied_person_ids(mapping_file, stop=9999)
     first = zn.redact("Alice", ("person",), numbered_entities=True)
     assert first.anonymized_text == "person_9999_REDACTED"
-    assert zn.redact(
-        "Alice", ("person",), numbered_entities=True
-    ).anonymized_text == first.anonymized_text
+    assert (
+        zn.redact("Alice", ("person",), numbered_entities=True).anonymized_text
+        == first.anonymized_text
+    )
     before = mapping_file.read_bytes()
 
     with pytest.raises(ValueError, match="exhausted"):

@@ -814,9 +814,7 @@ def test_same_source_with_different_labels_uses_each_labels_replacement(
     detections, entrypoint, reverse_labels, ensure_consistency
 ):
     text = "Jordan met Jordan; Jordan returned."
-    first, second = (
-        ("location", "person") if reverse_labels else ("person", "location")
-    )
+    first, second = ("location", "person") if reverse_labels else ("person", "location")
     values = {"person": "Alice", "location": "Venice"}
     spans, _ = detections
     spans[text] = [
