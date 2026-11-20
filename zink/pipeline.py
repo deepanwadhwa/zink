@@ -197,6 +197,7 @@ class Pseudonymizer:
             entity_to_id_map = {}
             # Track used IDs per label to avoid collisions
             used_ids_per_label = defaultdict(set)
+            available_ids_per_label = {}
 
             # Load existing mapping from default path
             mapping_file = get_default_mapping_path()
@@ -222,13 +223,27 @@ class Pseudonymizer:
                 if entity_key in entity_to_id_map:
                     rand_id = entity_to_id_map[entity_key]
                 else:
-                    # Otherwise, generate a new unique ID and store it.
-                    while True:
-                        rand_id = str(random.randint(1000, 9999))
-                        if rand_id not in used_ids_per_label[label]:
-                            used_ids_per_label[label].add(rand_id)
-                            entity_to_id_map[entity_key] = rand_id
-                            break
+                    # Build each label's remaining pool once. Random retries
+                    # cannot terminate when the four-digit ID space is full.
+                    if label not in available_ids_per_label:
+                        available_ids_per_label[label] = [
+                            str(value)
+                            for value in range(1000, 10000)
+                            if str(value) not in used_ids_per_label[label]
+                        ]
+                    available = available_ids_per_label[label]
+                    if not available:
+                        raise ValueError(
+                            f"Numbered IDs exhausted for label {label!r}: all "
+                            "9,000 IDs (1000-9999) are in use. Existing mappings "
+                            "can still be reused."
+                        )
+                    index = random.randrange(len(available))
+                    rand_id = available[index]
+                    available[index] = available[-1]
+                    available.pop()
+                    used_ids_per_label[label].add(rand_id)
+                    entity_to_id_map[entity_key] = rand_id
 
                 pseudonym = f"{label}_{rand_id}_REDACTED"
                 replacements_to_apply.append((e["start"], e["end"], pseudonym))

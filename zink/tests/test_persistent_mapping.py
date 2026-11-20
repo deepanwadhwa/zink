@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -125,3 +126,91 @@ def test_fresh_pipeline_reuses_numbered_mapping(fake_extractor, mapping_file):
     assert bob.pseudonym != alice.pseudonym
     stored = json.loads(mapping_file.read_text(encoding="utf-8"))
     assert set(stored["person"]) == {"Alice", "Bob"}
+
+
+@pytest.fixture
+def numbered_predictor(fake_extractor):
+    def predict(text, labels):
+        return [
+            {
+                "start": match.start(),
+                "end": match.end(),
+                "text": match.group(),
+                "label": labels[0],
+                "score": 1.0,
+            }
+            for match in re.finditer(r"\w+", text)
+        ]
+
+    fake_extractor(predict)
+
+
+def _occupied_person_ids(mapping_file, stop=10000):
+    mapping = {"person": {f"entity{i}": str(i) for i in range(1000, stop)}}
+    mapping_file.write_text(json.dumps(mapping), encoding="utf-8")
+    return mapping
+
+
+def test_numbered_exhaustion_raises_without_random_retries(
+    numbered_predictor, mapping_file, monkeypatch
+):
+    _occupied_person_ids(mapping_file)
+    before = mapping_file.read_bytes()
+
+    def unexpected_retry(*args):
+        pytest.fail("Exhausted allocation must terminate before drawing random IDs")
+
+    # Bound the old implementation too: a regression fails rather than hangs.
+    monkeypatch.setattr("zink.pipeline.random.randint", unexpected_retry)
+    monkeypatch.setattr("zink.pipeline.random.randrange", unexpected_retry)
+    with pytest.raises(ValueError, match="exhausted.*person.*9,000"):
+        zn.redact("Alice", ("person",), numbered_entities=True)
+
+    assert mapping_file.read_bytes() == before
+    # An error releases the mapping lock and leaves old IDs usable.
+    reused = zn.redact("entity1000", ("person",), numbered_entities=True)
+    assert reused.anonymized_text == "person_1000_REDACTED"
+
+
+def test_full_numbered_label_does_not_exhaust_other_labels(
+    numbered_predictor, mapping_file
+):
+    before = _occupied_person_ids(mapping_file)
+    result = zn.redact("Venice", ("location",), numbered_entities=True)
+    stored = json.loads(mapping_file.read_text(encoding="utf-8"))
+
+    assert stored["person"] == before["person"]
+    assert set(stored["location"]) == {"Venice"}
+    assert result.anonymized_text == (
+        f"location_{stored['location']['Venice']}_REDACTED"
+    )
+
+
+def test_last_numbered_id_is_available_without_collision_retries(
+    numbered_predictor, mapping_file
+):
+    _occupied_person_ids(mapping_file, stop=9999)
+    first = zn.redact("Alice", ("person",), numbered_entities=True)
+    assert first.anonymized_text == "person_9999_REDACTED"
+    assert zn.redact(
+        "Alice", ("person",), numbered_entities=True
+    ).anonymized_text == first.anonymized_text
+    before = mapping_file.read_bytes()
+
+    with pytest.raises(ValueError, match="exhausted"):
+        zn.redact("Bob", ("person",), numbered_entities=True)
+    assert mapping_file.read_bytes() == before
+
+
+def test_numbered_exhaustion_does_not_partially_persist_a_request(
+    numbered_predictor, mapping_file
+):
+    _occupied_person_ids(mapping_file, stop=9999)
+    before = mapping_file.read_bytes()
+
+    with pytest.raises(ValueError, match="exhausted"):
+        zn.redact("Alice ... Bob", ("person",), numbered_entities=True)
+    assert mapping_file.read_bytes() == before
+    # The attempted allocation did not consume the last available ID.
+    result = zn.redact("Carol", ("person",), numbered_entities=True)
+    assert result.anonymized_text == "person_9999_REDACTED"

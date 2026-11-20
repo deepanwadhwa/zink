@@ -141,6 +141,11 @@ Use `numbered_entities=True` to reuse placeholders for a detected label and
 source text across calls and sessions. The `~/.zink/mapping.json` file stores
 the original detected text in plain JSON. Keep the file private.
 
+Numbered placeholders support 9,000 distinct source strings per label across
+calls and sessions. Existing IDs remain reusable at capacity; assigning a new
+one raises `ValueError`. This limit applies to stored numbered placeholders;
+detection and ordinary redaction do not have this limit.
+
 ```python
 import zink as zn
 

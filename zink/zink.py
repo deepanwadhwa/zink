@@ -45,6 +45,9 @@ def redact(
         max_workers (int): Maximum worker threads for parallel extraction.
         numbered_entities (bool): Use stable numbered placeholders persisted in
             ``~/.zink/mapping.json``. This file contains original sensitive text.
+            Each label supports 9,000 distinct source strings. A new string
+            raises ``ValueError`` when that label's IDs are exhausted;
+            existing mappings can still be reused across calls and sessions.
 
     Returns:
         zink.result.PseudonymizationResult: Redacted text, detected spans and
