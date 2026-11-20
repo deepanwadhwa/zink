@@ -12,10 +12,10 @@ class EntityReplacer:
     def replace_entities_ensure_consistency(
         self, entities, text, user_replacements=None
     ):
-        """Replace detected spans, reusing one pseudonym per source string per call.
+        """Reuse one pseudonym per label and exact source string within a call.
 
         Entities must be ordered by start offset and must not overlap. The first
-        detected occurrence of a source string chooses its replacement. Each
+        detected occurrence of a label/source pair chooses its replacement. Each
         entity's dictionary receives the source of the applied replacement.
         A missing or unchanged replacement falls back to `<label>_REDACTED`.
         """
@@ -40,14 +40,15 @@ class EntityReplacer:
         previous_end = 0
         for entity in entities:
             original = entity["text"]
-            if ensure_consistency and original in replacements:
-                replacement, source = replacements[original]
+            key = (entity["label"].lower(), original)
+            if ensure_consistency and key in replacements:
+                replacement, source = replacements[key]
             else:
                 replacement, source = self._choose_replacement(
                     entity, user_replacements
                 )
                 if ensure_consistency:
-                    replacements[original] = replacement, source
+                    replacements[key] = replacement, source
 
             parts.extend((text[previous_end : entity["start"]], replacement))
             entity["source"] = source

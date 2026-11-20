@@ -107,7 +107,8 @@ def replace(
         user_replacements (dict, optional): Mapping from label to a fixed string
             or list of candidate strings. Keys are case insensitive.
         ensure_consistency (bool): Reuse one replacement for repeated source
-            strings in this call. Defaults to true.
+            strings with the same label in this call. Different labels have
+            independent replacements. Defaults to true.
         use_cache (bool): Reuse extraction for identical text and labels.
         use_json_mapping (bool): Use bundled replacement values as a fallback.
         extractor: Optional extractor providing ``predict2`` and ``predict``.
@@ -173,7 +174,8 @@ def replace_with_my_data(
         user_replacements (dict): Nonempty mapping from label to a fixed string
             or list of candidate strings. Unmapped labels use normal fallback.
         ensure_consistency (bool): Reuse one replacement for repeated source
-            strings in this call.
+            strings with the same label in this call. Different labels have
+            independent replacements.
         use_json_mapping (bool): Use bundled values for unmapped labels.
         extractor: Optional extractor providing ``predict2`` and ``predict``.
         merger: Optional object providing ``merge(entities, text)``.

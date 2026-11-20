@@ -805,3 +805,65 @@ def test_replace_country_and_city_use_different_location_providers(
         "faker_country",
         "faker",
     ]
+
+
+@pytest.mark.parametrize("entrypoint", [zn.replace, zn.replace_with_my_data])
+@pytest.mark.parametrize("reverse_labels", [False, True])
+@pytest.mark.parametrize("ensure_consistency", [True, False])
+def test_same_source_with_different_labels_uses_each_labels_replacement(
+    detections, entrypoint, reverse_labels, ensure_consistency
+):
+    text = "Jordan met Jordan; Jordan returned."
+    first, second = (
+        ("location", "person") if reverse_labels else ("person", "location")
+    )
+    values = {"person": "Alice", "location": "Venice"}
+    spans, _ = detections
+    spans[text] = [
+        _entity(text, 0, 6, first),
+        _entity(text, 11, 17, second),
+        _entity(text, 19, 25, first.upper()),
+    ]
+    result = entrypoint(
+        text,
+        user_replacements=values,
+        ensure_consistency=ensure_consistency,
+    )
+    assert result.anonymized_text == (
+        f"{values[first]} met {values[second]}; {values[first]} returned."
+    )
+    assert [entity["source"] for entity in result.replacements] == ["user"] * 3
+
+
+@pytest.mark.parametrize("entrypoint", [zn.replace, zn.replace_with_my_data])
+@pytest.mark.parametrize("ensure_consistency", [True, False])
+@pytest.mark.parametrize("lowercase_last", [False, True])
+def test_consistency_reuses_list_choices_within_label_and_exact_source_only(
+    detections, monkeypatch, entrypoint, ensure_consistency, lowercase_last
+):
+    last = "jordan" if lowercase_last else "Jordan"
+    text = f"Jordan met Jordan; {last} returned."
+    spans, _ = detections
+    spans[text] = [
+        _entity(text, 0, 6, "person"),
+        _entity(text, 11, 17, "location"),
+        _entity(text, 19, 25, "PERSON"),
+    ]
+    seen = {"Alice": 0, "Venice": 0}
+
+    def choose(values):
+        key = values[0]
+        index = seen[key]
+        seen[key] += 1
+        return values[index]
+
+    monkeypatch.setattr("zink.replacer.replacer.random.choice", choose)
+    result = entrypoint(
+        text,
+        user_replacements={"PERSON": ["Alice", "Bea"], "location": ["Venice"]},
+        ensure_consistency=ensure_consistency,
+    )
+    reused = ensure_consistency and not lowercase_last
+    expected_last = "Alice" if reused else "Bea"
+    assert result.anonymized_text == f"Alice met Venice; {expected_last} returned."
+    assert seen == {"Alice": 1 if reused else 2, "Venice": 1}

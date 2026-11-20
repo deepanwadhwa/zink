@@ -47,7 +47,11 @@ leaves detections that overlap a protected span intact.
 To replace detected spans with your own values, pass ``user_replacements``.
 Unmapped labels use Zink's default replacement strategy. When you provide a
 list, Zink selects one value from it. With ``ensure_consistency=True``
-(the default), repeated detected text shares a replacement within the call.
+(the default), repeated detected text with the same label shares a replacement
+within the call. Different labels have independent replacements: if ``Jordan``
+is detected as a person and a location, ``{"person": "Alice", "location": "Venice"}``
+produces ``Alice`` for the person and ``Venice`` for the location. Source text
+matching is case sensitive; label matching is case insensitive.
 Only the detected spans change.
 
 .. code-block:: python
