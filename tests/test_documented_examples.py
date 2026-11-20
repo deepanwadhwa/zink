@@ -74,6 +74,26 @@ def test_readme_persistent_mapping_example(fake_extractor, capsys):
     check_numbering_example(capsys)
 
 
+def test_readme_label_consistency_example(fake_extractor, capsys):
+    def predict(text, labels):
+        assert text == "Jordan met Jordan."
+        assert tuple(labels) == ("person", "location")
+        return [
+            {
+                "text": "Jordan",
+                "label": label,
+                "start": start,
+                "end": start + 6,
+                "score": 1.0,
+            }
+            for start, label in ((0, "person"), (11, "location"))
+        ]
+
+    fake_extractor(predict)
+    exec(readme_example("#### Consistency and version compatibility"), {})
+    assert capsys.readouterr().out.splitlines() == ["Alice met Venice."]
+
+
 @pytest.mark.integration
 def test_readme_persistent_mapping_example_with_real_model(capsys):
     check_numbering_example(capsys)

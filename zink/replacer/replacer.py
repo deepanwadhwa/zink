@@ -3,6 +3,11 @@ import random
 from .rfakerjson import FakerOrJsonReplacementStrategy
 
 
+def _validate_consistency_scope(scope):
+    if scope not in ("text", "label"):
+        raise ValueError("consistency_scope must be 'text' or 'label'")
+
+
 class EntityReplacer:
     """Apply pseudonyms at detected spans in the original input."""
 
@@ -10,16 +15,25 @@ class EntityReplacer:
         self.use_json_mapping = use_json_mapping
 
     def replace_entities_ensure_consistency(
-        self, entities, text, user_replacements=None
+        self, entities, text, user_replacements=None, *, consistency_scope="text"
     ):
-        """Replace detected spans, reusing one pseudonym per source string per call.
+        """Reuse one pseudonym per exact source string within a call.
 
         Entities must be ordered by start offset and must not overlap. The first
-        detected occurrence of a source string chooses its replacement. Each
+        occurrence of a source string chooses its replacement across labels,
+        preserving the behavior in v0.7.1. In v0.7.2, explicitly pass
+        ``consistency_scope="label"`` for independent reuse per label/source pair.
+        Label matching is case insensitive; source matching is case sensitive. Each
         entity's dictionary receives the source of the applied replacement.
         A missing or unchanged replacement falls back to `<label>_REDACTED`.
         """
-        return self._replace(entities, text, user_replacements, ensure_consistency=True)
+        return self._replace(
+            entities,
+            text,
+            user_replacements,
+            ensure_consistency=True,
+            consistency_scope=consistency_scope,
+        )
 
     def replace_entities(self, entities, text, user_replacements=None):
         """Replace detected spans, choosing the pseudonym independently for each.
@@ -31,7 +45,16 @@ class EntityReplacer:
             entities, text, user_replacements, ensure_consistency=False
         )
 
-    def _replace(self, entities, text, user_replacements, *, ensure_consistency):
+    def _replace(
+        self,
+        entities,
+        text,
+        user_replacements,
+        *,
+        ensure_consistency,
+        consistency_scope="text",
+    ):
+        _validate_consistency_scope(consistency_scope)
         user_replacements = {
             label.lower(): value for label, value in (user_replacements or {}).items()
         }
@@ -40,14 +63,19 @@ class EntityReplacer:
         previous_end = 0
         for entity in entities:
             original = entity["text"]
-            if ensure_consistency and original in replacements:
-                replacement, source = replacements[original]
+            key = (
+                (entity["label"].lower(), original)
+                if consistency_scope == "label"
+                else original
+            )
+            if ensure_consistency and key in replacements:
+                replacement, source = replacements[key]
             else:
                 replacement, source = self._choose_replacement(
                     entity, user_replacements
                 )
                 if ensure_consistency:
-                    replacements[original] = replacement, source
+                    replacements[key] = replacement, source
 
             parts.extend((text[previous_end : entity["start"]], replacement))
             entity["source"] = source

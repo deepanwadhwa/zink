@@ -8,8 +8,10 @@ from threading import RLock
 from zink.extractor import _DEFAULT_EXTRACTOR
 from zink.merger import EntityMerger
 from zink.replacer import EntityReplacer
+from zink.replacer.replacer import _validate_consistency_scope
 from zink.result import PseudonymizationResult, ReplacementDetail
 from zink.utils.paths import get_default_mapping_path
+from zink.utils.mapping import save_mapping
 from .passage_processors import extract_entities_in_parallel
 
 _MAPPING_LOCK = RLock()
@@ -197,6 +199,7 @@ class Pseudonymizer:
             entity_to_id_map = {}
             # Track used IDs per label to avoid collisions
             used_ids_per_label = defaultdict(set)
+            available_ids_per_label = {}
 
             # Load existing mapping from default path
             mapping_file = get_default_mapping_path()
@@ -222,13 +225,27 @@ class Pseudonymizer:
                 if entity_key in entity_to_id_map:
                     rand_id = entity_to_id_map[entity_key]
                 else:
-                    # Otherwise, generate a new unique ID and store it.
-                    while True:
-                        rand_id = str(random.randint(1000, 9999))
-                        if rand_id not in used_ids_per_label[label]:
-                            used_ids_per_label[label].add(rand_id)
-                            entity_to_id_map[entity_key] = rand_id
-                            break
+                    # Build each label's remaining pool once. Random retries
+                    # cannot terminate when the four-digit ID space is full.
+                    if label not in available_ids_per_label:
+                        available_ids_per_label[label] = [
+                            str(value)
+                            for value in range(1000, 10000)
+                            if str(value) not in used_ids_per_label[label]
+                        ]
+                    available = available_ids_per_label[label]
+                    if not available:
+                        raise ValueError(
+                            f"Numbered IDs exhausted for label {label!r}: all "
+                            "9,000 IDs (1000-9999) are in use. Existing mappings "
+                            "can still be reused."
+                        )
+                    index = random.randrange(len(available))
+                    rand_id = available[index]
+                    available[index] = available[-1]
+                    available.pop()
+                    used_ids_per_label[label].add(rand_id)
+                    entity_to_id_map[entity_key] = rand_id
 
                 pseudonym = f"{label}_{rand_id}_REDACTED"
                 replacements_to_apply.append((e["start"], e["end"], pseudonym))
@@ -251,8 +268,7 @@ class Pseudonymizer:
                 for (label, original_text), ent_id in entity_to_id_map.items():
                     serializable_mapping[label][original_text] = ent_id
 
-                with open(mapping_file, "w") as f:
-                    json.dump(serializable_mapping, f, indent=2)
+                save_mapping(mapping_file, serializable_mapping)
             except Exception as e:
                 print(f"Warning: Failed to save mapping file {mapping_file}: {e}")
 
@@ -288,13 +304,18 @@ class Pseudonymizer:
         auto_parallel=False,
         chunk_size=1000,
         max_workers=4,
+        *,
+        consistency_scope="text",
     ):
         """
         Replace detected spans using a per-call consistent or independent mapping.
 
         See :func:`zink.replace`. Long text is chunked when it exceeds
         ``chunk_size``. Returned entity dictionaries are private to this result.
+        Consistency defaults to exact source text across labels, as in v0.7.1.
+        Set ``consistency_scope="label"`` to opt into label-specific reuse.
         """
+        _validate_consistency_scope(consistency_scope)
         if len(text) > chunk_size:
             auto_parallel = True
         if auto_parallel and len(text) > chunk_size:
@@ -311,7 +332,7 @@ class Pseudonymizer:
 
         merged = [dict(entity) for entity in self.merger.merge(merged, text)]
         anonymized_text = self._replace_entities(
-            text, merged, user_replacements, ensure_consistency
+            text, merged, user_replacements, ensure_consistency, consistency_scope
         )
         return PseudonymizationResult(
             original_text=text,
@@ -321,12 +342,25 @@ class Pseudonymizer:
         )
 
     def _replace_entities(
-        self, text, merged_entities, user_replacements=None, ensure_consistency=True
+        self,
+        text,
+        merged_entities,
+        user_replacements=None,
+        ensure_consistency=True,
+        consistency_scope="text",
     ):
         """
         Perform the actual replacements, ensuring consistency if requested.
         """
         if ensure_consistency:
+            if consistency_scope == "label":
+                return self.replacer.replace_entities_ensure_consistency(
+                    merged_entities,
+                    text,
+                    user_replacements,
+                    consistency_scope="label",
+                )
+            # Keep the old three-argument component protocol for default calls.
             return self.replacer.replace_entities_ensure_consistency(
                 merged_entities, text, user_replacements
             )
@@ -344,12 +378,17 @@ class Pseudonymizer:
         auto_parallel=False,
         chunk_size=1000,
         max_workers=4,
+        *,
+        consistency_scope="text",
     ):
         """
         Replace detected spans with required user data, without caching extraction.
 
         See :func:`zink.replace_with_my_data` for the arguments and result fields.
+        Consistency defaults to exact source text across labels, as in v0.7.1.
+        Set ``consistency_scope="label"`` to opt into label-specific reuse.
         """
+        _validate_consistency_scope(consistency_scope)
         if len(text) > chunk_size:
             auto_parallel = True
         if user_replacements is None or not user_replacements:
@@ -366,7 +405,7 @@ class Pseudonymizer:
             dict(entity) for entity in self.merger.merge(all_entities, text)
         ]
         anonymized_text = self._replace_entities(
-            text, all_entities, user_replacements, ensure_consistency
+            text, all_entities, user_replacements, ensure_consistency, consistency_scope
         )
         return PseudonymizationResult(
             original_text=text,

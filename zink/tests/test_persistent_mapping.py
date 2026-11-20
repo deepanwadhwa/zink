@@ -1,4 +1,7 @@
 import json
+import os
+import re
+import stat
 from pathlib import Path
 
 import pytest
@@ -125,3 +128,145 @@ def test_fresh_pipeline_reuses_numbered_mapping(fake_extractor, mapping_file):
     assert bob.pseudonym != alice.pseudonym
     stored = json.loads(mapping_file.read_text(encoding="utf-8"))
     assert set(stored["person"]) == {"Alice", "Bob"}
+
+
+@pytest.fixture
+def numbered_predictor(fake_extractor):
+    def predict(text, labels):
+        return [
+            {
+                "start": match.start(),
+                "end": match.end(),
+                "text": match.group(),
+                "label": labels[0],
+                "score": 1.0,
+            }
+            for match in re.finditer(r"\w+", text)
+        ]
+
+    fake_extractor(predict)
+
+
+def _occupied_person_ids(mapping_file, stop=10000):
+    mapping = {"person": {f"entity{i}": str(i) for i in range(1000, stop)}}
+    mapping_file.write_text(json.dumps(mapping), encoding="utf-8")
+    return mapping
+
+
+def test_numbered_exhaustion_raises_without_random_retries(
+    numbered_predictor, mapping_file, monkeypatch
+):
+    _occupied_person_ids(mapping_file)
+    before = mapping_file.read_bytes()
+
+    def unexpected_retry(*args):
+        pytest.fail("Exhausted allocation must terminate before drawing random IDs")
+
+    # Bound the old implementation too: a regression fails rather than hangs.
+    monkeypatch.setattr("zink.pipeline.random.randint", unexpected_retry)
+    monkeypatch.setattr("zink.pipeline.random.randrange", unexpected_retry)
+    with pytest.raises(ValueError, match="exhausted.*person.*9,000"):
+        zn.redact("Alice", ("person",), numbered_entities=True)
+
+    assert mapping_file.read_bytes() == before
+    # An error releases the mapping lock and leaves old IDs usable.
+    reused = zn.redact("entity1000", ("person",), numbered_entities=True)
+    assert reused.anonymized_text == "person_1000_REDACTED"
+
+
+def test_full_numbered_label_does_not_exhaust_other_labels(
+    numbered_predictor, mapping_file
+):
+    before = _occupied_person_ids(mapping_file)
+    result = zn.redact("Venice", ("location",), numbered_entities=True)
+    stored = json.loads(mapping_file.read_text(encoding="utf-8"))
+
+    assert stored["person"] == before["person"]
+    assert set(stored["location"]) == {"Venice"}
+    assert result.anonymized_text == (
+        f"location_{stored['location']['Venice']}_REDACTED"
+    )
+
+
+def test_last_numbered_id_is_available_without_collision_retries(
+    numbered_predictor, mapping_file
+):
+    _occupied_person_ids(mapping_file, stop=9999)
+    first = zn.redact("Alice", ("person",), numbered_entities=True)
+    assert first.anonymized_text == "person_9999_REDACTED"
+    assert (
+        zn.redact("Alice", ("person",), numbered_entities=True).anonymized_text
+        == first.anonymized_text
+    )
+    before = mapping_file.read_bytes()
+
+    with pytest.raises(ValueError, match="exhausted"):
+        zn.redact("Bob", ("person",), numbered_entities=True)
+    assert mapping_file.read_bytes() == before
+
+
+def test_numbered_exhaustion_does_not_partially_persist_a_request(
+    numbered_predictor, mapping_file
+):
+    _occupied_person_ids(mapping_file, stop=9999)
+    before = mapping_file.read_bytes()
+
+    with pytest.raises(ValueError, match="exhausted"):
+        zn.redact("Alice ... Bob", ("person",), numbered_entities=True)
+    assert mapping_file.read_bytes() == before
+    # The attempted allocation did not consume the last available ID.
+    result = zn.redact("Carol", ("person",), numbered_entities=True)
+    assert result.anonymized_text == "person_9999_REDACTED"
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX file permission bits")
+@pytest.mark.parametrize("mask", [0o022, 0o077])
+@pytest.mark.parametrize("existing", [False, True])
+def test_mapping_is_private_on_creation_and_rewrite(
+    numbered_predictor, mapping_file, mask, existing
+):
+    if existing:
+        mapping_file.write_text('{"person": {"Alice": "1234"}}', encoding="utf-8")
+        mapping_file.chmod(0o644)
+    previous_mask = os.umask(mask)
+    try:
+        result = zn.redact("Alice", ("person",), numbered_entities=True)
+    finally:
+        os.umask(previous_mask)
+
+    assert stat.S_IMODE(mapping_file.stat().st_mode) == 0o600
+    stored = json.loads(mapping_file.read_text(encoding="utf-8"))
+    assert result.anonymized_text == f"person_{stored['person']['Alice']}_REDACTED"
+    if existing:
+        assert stored["person"]["Alice"] == "1234"
+    assert list(mapping_file.parent.iterdir()) == [mapping_file]
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX directory permission bits")
+def test_new_mapping_directory_is_private_under_permissive_umask(monkeypatch, tmp_path):
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
+    previous_mask = os.umask(0o022)
+    try:
+        path = Path(get_default_mapping_path())
+    finally:
+        os.umask(previous_mask)
+    assert stat.S_IMODE(path.parent.stat().st_mode) == 0o700
+
+
+@pytest.mark.parametrize("failure", ["serialization", "replacement"])
+def test_failed_mapping_write_preserves_old_file_and_removes_temporary(
+    numbered_predictor, mapping_file, monkeypatch, capsys, failure
+):
+    original = '{"person": {"Alice": "1234"}}'
+    mapping_file.write_text(original, encoding="utf-8")
+
+    def fail(*args, **kwargs):
+        raise OSError("simulated write failure")
+
+    target = "json.dump" if failure == "serialization" else "os.replace"
+    monkeypatch.setattr(f"zink.utils.mapping.{target}", fail)
+    zn.redact("Bob", ("person",), numbered_entities=True)
+
+    assert mapping_file.read_text(encoding="utf-8") == original
+    assert list(mapping_file.parent.iterdir()) == [mapping_file]
+    assert "Failed to save mapping file" in capsys.readouterr().out

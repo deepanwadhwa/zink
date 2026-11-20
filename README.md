@@ -104,6 +104,55 @@ print(result.anonymized_text)
 Alice works at OpenAI and drives a Honda.
 ```
 
+#### Consistency and version compatibility
+
+`ensure_consistency=True` keeps the behavior of v0.7.1: repeated exact source
+text shares one replacement across labels within the call. The first detected
+occurrence chooses that replacement, even if later occurrences have a different
+label and a different configured replacement. Upgrading to v0.7.2 keeps this
+default.
+
+**New in v0.7.2:** opt into label-specific reuse with
+`ensure_consistency=True, consistency_scope="label"`. A person named Jordan
+and a location named Jordan can then become Alice and Venice independently.
+Labels are case insensitive; source text matching is case sensitive.
+
+For `Jordan met Jordan.`, assuming the detections are person then location and
+the replacement rules are `{"person": "Alice", "location": "Venice"}`:
+
+| Version | Arguments | Result |
+| --- | --- | --- |
+| v0.7.1 | `ensure_consistency=True` (default) | `Alice met Alice.` |
+| v0.7.2 | `ensure_consistency=True`, scope omitted or `"text"` | `Alice met Alice.` |
+| v0.7.2 | `ensure_consistency=True, consistency_scope="label"` | `Alice met Venice.` |
+| v0.7.1 / v0.7.2 | `ensure_consistency=False` | `Alice met Venice.` |
+
+With `ensure_consistency=False`, each detected occurrence chooses independently,
+including repeated text within the same label. Lists and generated values may
+therefore differ between mentions. In v0.7.2 the scope has no effect in this
+mode. Older versions do not accept `consistency_scope`; passing it raises
+`TypeError`.
+
+```python
+import zink as zn
+
+# Requires v0.7.2. Actual output depends on the detected labels.
+result = zn.replace_with_my_data(
+    "Jordan met Jordan.",
+    categories=("person", "location"),
+    user_replacements={"person": "Alice", "location": "Venice"},
+    ensure_consistency=True,
+    consistency_scope="label",
+)
+print(result.anonymized_text)
+```
+
+For long text, chunking preserves whole words and adds overlapping context to
+help recognize entities across boundaries. `chunk_size` is a soft character
+target; inference windows can be longer. Both replacement APIs automatically
+chunk text exceeding the target; redaction requires `auto_parallel=True`.
+Model predictions can still miss sensitive text, so review the output.
+
 ### 3. Shielding LLM and API Calls
 The `@zink.shield` decorator redacts detected spans in one argument before
 passing it to a function. It restores those values in the returned string.
@@ -140,6 +189,14 @@ Analysis for Report for John Doe from Acme Inc. is complete.
 Use `numbered_entities=True` to reuse placeholders for a detected label and
 source text across calls and sessions. The `~/.zink/mapping.json` file stores
 the original detected text in plain JSON. Keep the file private.
+On POSIX systems, Zink writes it atomically with owner-only permissions
+(`0600`), including when updating an existing mapping. New mapping directories
+use `0700`. On Windows, restrict access through the directory's access controls.
+
+Numbered placeholders support 9,000 distinct source strings per label across
+calls and sessions. Existing IDs remain reusable at capacity; assigning a new
+one raises `ValueError`. This limit applies to stored numbered placeholders;
+detection and ordinary redaction do not have this limit.
 
 ```python
 import zink as zn

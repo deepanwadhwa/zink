@@ -70,13 +70,99 @@ def test_public_replacement_honors_custom_components(entrypoint, ensure_consiste
     assert result.features["num_replacements"] == 1
 
 
+@pytest.mark.parametrize("entrypoint", [zink.replace, zink.replace_with_my_data])
+@pytest.mark.parametrize("ensure_consistency", [True, False])
+def test_label_scope_reaches_custom_replacer_only_when_consistency_is_enabled(
+    entrypoint, ensure_consistency
+):
+    from zink.replacer import EntityReplacer
+
+    text = "Jordan met Jordan."
+    calls = []
+
+    def extract(passage, labels):
+        return [_entity(passage, 0, 6, "person"), _entity(passage, 11, 17, "location")]
+
+    class Replacer:
+        def replace_entities_ensure_consistency(
+            self, entities, passage, values, *, consistency_scope
+        ):
+            calls.append(consistency_scope)
+            return EntityReplacer().replace_entities_ensure_consistency(
+                entities, passage, values, consistency_scope=consistency_scope
+            )
+
+        def replace_entities(self, entities, passage, values):
+            calls.append("independent")
+            return EntityReplacer().replace_entities(entities, passage, values)
+
+    result = entrypoint(
+        text,
+        categories=("person", "location"),
+        user_replacements={"person": "Alice", "location": "Venice"},
+        ensure_consistency=ensure_consistency,
+        consistency_scope="label",
+        extractor=SimpleNamespace(predict2=extract),
+        replacer=Replacer(),
+    )
+    assert result.anonymized_text == "Alice met Venice."
+    assert calls == ["label" if ensure_consistency else "independent"]
+
+
+@pytest.mark.parametrize("entrypoint", [zink.replace, zink.replace_with_my_data])
+def test_existing_positional_replacement_arguments_keep_their_meaning(entrypoint):
+    text = "Jordan met Jordan."
+
+    def extract(passage, labels):
+        return [_entity(passage, 0, 6, "person"), _entity(passage, 11, 17, "location")]
+
+    values = {"person": "Alice", "location": "Venice"}
+    extractor = SimpleNamespace(predict2=extract)
+    if entrypoint is zink.replace:
+        args = (
+            text,
+            ("person", "location"),
+            values,
+            True,
+            True,
+            True,
+            extractor,
+            None,
+            None,
+            False,
+            1000,
+            4,
+        )
+    else:
+        args = (
+            text,
+            ("person", "location"),
+            values,
+            True,
+            True,
+            extractor,
+            None,
+            None,
+            False,
+            1000,
+            4,
+        )
+    assert entrypoint(*args).anonymized_text == "Alice met Alice."
+    assert (
+        entrypoint(*args, consistency_scope="label").anonymized_text
+        == "Alice met Venice."
+    )
+
+
 def test_parallel_public_redaction_honors_custom_extractor_and_merger():
     text = "Ana Bob."
+    calls = []
 
     def extract(chunk, labels):
         assert labels == ("person",)
-        assert chunk in ("Ana ", "Bob.")
-        return [_entity(chunk, 0, 3)]
+        assert chunk == text
+        calls.append(chunk)
+        return [_entity(chunk, 0, 3), _entity(chunk, 4, 7)]
 
     def keep_only_bob(entities, passage):
         assert passage == text
@@ -95,6 +181,7 @@ def test_parallel_public_redaction_honors_custom_extractor_and_merger():
     )
 
     assert result.anonymized_text == "Ana [person]."
+    assert calls == [text]  # Identical context windows are inferred only once.
     assert result.features["num_replacements"] == 1
     (detail,) = result.replacements
     assert (detail.original, detail.start, detail.end, detail.pseudonym) == (

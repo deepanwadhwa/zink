@@ -805,3 +805,143 @@ def test_replace_country_and_city_use_different_location_providers(
         "faker_country",
         "faker",
     ]
+
+
+@pytest.mark.parametrize("entrypoint", [zn.replace, zn.replace_with_my_data])
+@pytest.mark.parametrize("reverse_labels", [False, True])
+@pytest.mark.parametrize("ensure_consistency", [None, True, False])
+@pytest.mark.parametrize("scope", [None, "text", "label"])
+def test_replacement_consistency_preserves_default_and_supports_label_opt_in(
+    detections, entrypoint, reverse_labels, ensure_consistency, scope
+):
+    text = "Jordan met Jordan; Jordan returned."
+    first, second = ("location", "person") if reverse_labels else ("person", "location")
+    values = {"person": "Alice", "location": "Venice"}
+    spans, _ = detections
+    spans[text] = [
+        _entity(text, 0, 6, first),
+        _entity(text, 11, 17, second),
+        _entity(text, 19, 25, first.upper()),
+    ]
+    kwargs = {"user_replacements": values}
+    if ensure_consistency is not None:
+        kwargs["ensure_consistency"] = ensure_consistency
+    if scope is not None:
+        kwargs["consistency_scope"] = scope
+    result = entrypoint(text, **kwargs)
+    text_wide = ensure_consistency is not False and scope != "label"
+    middle = first if text_wide else second
+    assert result.anonymized_text == (
+        f"{values[first]} met {values[middle]}; {values[first]} returned."
+    )
+    assert [entity["source"] for entity in result.replacements] == ["user"] * 3
+
+
+@pytest.mark.parametrize("entrypoint", [zn.replace, zn.replace_with_my_data])
+@pytest.mark.parametrize("ensure_consistency", [True, False])
+@pytest.mark.parametrize("lowercase_last", [False, True])
+@pytest.mark.parametrize("scope", [None, "text", "label"])
+def test_consistency_scopes_reuse_list_choices_and_respect_exact_source_case(
+    detections, monkeypatch, entrypoint, ensure_consistency, lowercase_last, scope
+):
+    last = "jordan" if lowercase_last else "Jordan"
+    text = f"Jordan met Jordan; {last} returned."
+    spans, _ = detections
+    spans[text] = [
+        _entity(text, 0, 6, "person"),
+        _entity(text, 11, 17, "location"),
+        _entity(text, 19, 25, "PERSON"),
+    ]
+    seen = {"Alice": 0, "Venice": 0}
+
+    def choose(values):
+        key = values[0]
+        index = seen[key]
+        seen[key] += 1
+        return values[index]
+
+    monkeypatch.setattr("zink.replacer.replacer.random.choice", choose)
+    kwargs = {} if scope is None else {"consistency_scope": scope}
+    result = entrypoint(
+        text,
+        user_replacements={"PERSON": ["Alice", "Bea"], "location": ["Venice"]},
+        ensure_consistency=ensure_consistency,
+        **kwargs,
+    )
+    reused = ensure_consistency and not lowercase_last
+    expected_last = "Alice" if reused else "Bea"
+    text_wide = ensure_consistency and scope != "label"
+    middle = "Alice" if text_wide else "Venice"
+    assert result.anonymized_text == f"Alice met {middle}; {expected_last} returned."
+    assert seen == {"Alice": 1 if reused else 2, "Venice": 0 if text_wide else 1}
+
+
+@pytest.mark.parametrize("entrypoint", [zn.replace, zn.replace_with_my_data])
+@pytest.mark.parametrize("ensure_consistency", [True, False])
+@pytest.mark.parametrize("scope", [None, "", "Label", "entity", [], 42])
+def test_invalid_consistency_scope_fails_before_extraction(
+    entrypoint, ensure_consistency, scope
+):
+    def unexpected_prediction(*args, **kwargs):
+        pytest.fail("Invalid scope must fail before calling the extractor")
+
+    with pytest.raises(ValueError, match="consistency_scope must be 'text' or 'label'"):
+        entrypoint(
+            "Jordan met Jordan.",
+            user_replacements={"person": "Alice", "location": "Venice"},
+            ensure_consistency=ensure_consistency,
+            consistency_scope=scope,
+            extractor=SimpleNamespace(predict2=unexpected_prediction),
+        )
+
+
+@pytest.mark.parametrize("entrypoint", [zn.replace, zn.replace_with_my_data])
+def test_alternating_scopes_does_not_leak_choices_between_calls(detections, entrypoint):
+    text = "Jordan met Jordan."
+    spans, calls = detections
+    spans[text] = [_entity(text, 0, 6, "person"), _entity(text, 11, 17, "location")]
+    values = {"person": "Alice", "location": "Venice"}
+    outputs = [
+        entrypoint(
+            text, user_replacements=values, consistency_scope=scope
+        ).anonymized_text
+        for scope in ("text", "label", "text")
+    ]
+    assert outputs == ["Alice met Alice.", "Alice met Venice.", "Alice met Alice."]
+    assert len(calls) == (1 if entrypoint is zn.replace else 3)
+
+
+def test_concurrent_requests_choose_their_own_consistency_scope(detections):
+    text = "Jordan met Jordan."
+    spans, _ = detections
+    spans[text] = [_entity(text, 0, 6, "person"), _entity(text, 11, 17, "location")]
+    scopes = ["text", "label"] * 5
+
+    def replace(scope):
+        return zn.replace(
+            text,
+            user_replacements={"person": "Alice", "location": "Venice"},
+            consistency_scope=scope,
+        ).anonymized_text
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        outputs = list(pool.map(replace, scopes))
+    assert outputs == ["Alice met Alice.", "Alice met Venice."] * 5
+
+
+@pytest.mark.parametrize("scope", [None, "text", "label"])
+def test_direct_replacer_keeps_text_default_and_supports_label_scope(scope):
+    text = "Jordan met Jordan."
+    entities = [_entity(text, 0, 6, "person"), _entity(text, 11, 17, "location")]
+    kwargs = {} if scope is None else {"consistency_scope": scope}
+    result = EntityReplacer().replace_entities_ensure_consistency(
+        entities, text, {"person": "Alice", "location": "Venice"}, **kwargs
+    )
+    assert result == ("Alice met Venice." if scope == "label" else "Alice met Alice.")
+
+
+def test_direct_replacer_rejects_invalid_consistency_scope():
+    with pytest.raises(ValueError, match="consistency_scope"):
+        EntityReplacer().replace_entities_ensure_consistency(
+            [], "", consistency_scope="unknown"
+        )

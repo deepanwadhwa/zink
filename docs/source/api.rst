@@ -33,6 +33,56 @@ The optional pipeline components can be supplied as ``extractor``,
 ``merger``, and ``replacer``. See :class:`zink.pipeline.Pseudonymizer`
 for their callable interfaces.
 
+.. _replacement-consistency-versions:
+
+Replacement consistency across versions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In v0.7.1 and v0.7.2, ``ensure_consistency=True`` reuses the first replacement
+for exact source text across labels within a call. The v0.7.2 default preserves
+that policy. Source text is case sensitive.
+
+.. versionadded:: 0.7.2
+
+   Both replacement APIs accept the keyword-only ``consistency_scope``.
+   ``"text"`` is the default; ``"label"`` opts into independent reuse for each
+   normalized label and exact source string. Existing positional arguments
+   retain their meaning. v0.7.1 and older versions do not accept this keyword.
+
+For ``Jordan met Jordan.``, assume that the first mention is detected as person,
+the second as location, and the replacement rules are
+``{"person": "Alice", "location": "Venice"}``:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Version
+     - Arguments
+     - Output
+   * - v0.7.1
+     - ``ensure_consistency=True`` (default)
+     - ``Alice met Alice.``
+   * - v0.7.2
+     - ``ensure_consistency=True``, scope omitted or ``"text"``
+     - ``Alice met Alice.``
+   * - v0.7.2
+     - ``ensure_consistency=True, consistency_scope="label"``
+     - ``Alice met Venice.``
+   * - v0.7.1 / v0.7.2
+     - ``ensure_consistency=False``
+     - ``Alice met Venice.``
+
+With consistency disabled, candidate lists and generated replacements can vary
+for every occurrence, including within a label. In v0.7.2 scope is ignored in
+that mode, but invalid scope values still raise ``ValueError`` before inference.
+Passing the new keyword to an older version raises ``TypeError``. Check
+``zink.__version__`` or pin ``zink>=0.7.2`` when using it.
+
+Custom replacers keep the existing three-argument method protocol for default
+calls and when consistency is disabled. Opting into label scope requires their
+``replace_entities_ensure_consistency`` method to also accept the keyword
+``consistency_scope="label"``. The built-in replacer supports both scopes.
+
 Protected text and mapping
 --------------------------
 
@@ -96,8 +146,21 @@ Passage processing
 ------------------
 
 The low-level passage helpers return detections with offsets in the original
-passage. Choose chunk boundaries carefully since splitting an entity can
-prevent the model from recognizing it.
+passage. ``chunk_size`` is a soft target in characters: core chunks extend to
+finish a word and its trailing whitespace. Periods, hyphens, and dashes within
+words are preserved. Inference adds 32 to 128 characters of context on each side
+of each core, extended to whole words, so multiword entities can be recognized
+across boundaries. Identical windows are processed once, and duplicate spans
+keep their highest score. Only detections intersecting a window's core are kept.
+
+Context reduces boundary losses but model detection remains imperfect, and
+entities longer than the available context can still be missed or fragmented.
+Review sensitive output before sharing it. Extremely long whitespace-free input
+can exceed the backend's input limits even though the chunker keeps it intact.
+
+``redact`` uses chunking when ``auto_parallel=True`` and the text exceeds the
+target. Both replacement APIs automatically chunk text exceeding the target,
+including when ``auto_parallel=False``.
 
 .. autofunction:: zink.passage_processors.chunk_text
 

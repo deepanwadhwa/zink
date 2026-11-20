@@ -288,7 +288,7 @@ def test_protection_can_cross_a_parallel_chunk_boundary(fake_extractor):
 
     def predict(chunk, labels):
         assert tuple(labels) == ("person",)
-        spans = {"Bob met Alic": [(0, 3), (8, 12)], "e Smith.": [(0, 7)]}
+        assert chunk == text  # Shared context spans the protected name.
         return [
             {
                 "start": start,
@@ -297,7 +297,7 @@ def test_protection_can_cross_a_parallel_chunk_boundary(fake_extractor):
                 "label": "person",
                 "score": 0.9,
             }
-            for start, end in spans[chunk]
+            for start, end in [(0, 3), (8, 19)]
         ]
 
     fake_extractor(predict)

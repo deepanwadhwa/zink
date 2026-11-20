@@ -41,10 +41,14 @@ def redact(
         replacer: Optional ``EntityReplacer``-compatible replacement component.
         auto_parallel (bool): Extract long text in chunks when it exceeds
             ``chunk_size``. Defaults to false.
-        chunk_size (int): Chunk threshold in characters.
+        chunk_size (int): Soft chunk target in characters. Chunks finish whole
+            words and add overlapping context for detection across boundaries.
         max_workers (int): Maximum worker threads for parallel extraction.
         numbered_entities (bool): Use stable numbered placeholders persisted in
             ``~/.zink/mapping.json``. This file contains original sensitive text.
+            Each label supports 9,000 distinct source strings. A new string
+            raises ``ValueError`` when that label's IDs are exhausted;
+            existing mappings can still be reused across calls and sessions.
 
     Returns:
         zink.result.PseudonymizationResult: Redacted text, detected spans and
@@ -95,6 +99,8 @@ def replace(
     auto_parallel=False,
     chunk_size=1000,
     max_workers=4,
+    *,
+    consistency_scope="text",
 ):
     """Replace detected entities with synthetic or user supplied values.
 
@@ -104,7 +110,14 @@ def replace(
         user_replacements (dict, optional): Mapping from label to a fixed string
             or list of candidate strings. Keys are case insensitive.
         ensure_consistency (bool): Reuse one replacement for repeated source
-            strings in this call. Defaults to true.
+            strings in this call. Defaults to true. With the default scope,
+            the first occurrence chooses the replacement across all labels,
+            preserving v0.7.1 behavior.
+        consistency_scope (str): Added in v0.7.2. ``"text"`` (default) shares
+            replacements for exact source text across labels; ``"label"``
+            shares only within each label/source pair. Labels are case
+            insensitive and source text is case sensitive. Has no effect when
+            ``ensure_consistency=False``. Older versions reject this argument.
         use_cache (bool): Reuse extraction for identical text and labels.
         use_json_mapping (bool): Use bundled replacement values as a fallback.
         extractor: Optional extractor providing ``predict2`` and ``predict``.
@@ -112,11 +125,15 @@ def replace(
         replacer: Optional ``EntityReplacer``-compatible replacement component.
         auto_parallel (bool): Request chunked extraction for long text. Text
             longer than ``chunk_size`` is chunked regardless of this setting.
-        chunk_size (int): Chunk threshold in characters.
+        chunk_size (int): Soft chunk target in characters. Chunks finish whole
+            words and add overlapping context for detection across boundaries.
         max_workers (int): Maximum worker threads for parallel extraction.
 
     Returns:
         zink.result.PseudonymizationResult: Result with transformed text.
+
+    Raises:
+        ValueError: If ``consistency_scope`` is not ``"text"`` or ``"label"``.
     """
     if extractor is None and merger is None and replacer is None and use_json_mapping:
         return _global_instance.replace(
@@ -124,6 +141,7 @@ def replace(
             categories=categories,
             user_replacements=user_replacements,
             ensure_consistency=ensure_consistency,
+            consistency_scope=consistency_scope,
             use_cache=use_cache,
             auto_parallel=auto_parallel,
             chunk_size=chunk_size,
@@ -141,6 +159,7 @@ def replace(
             categories=categories,
             user_replacements=user_replacements,
             ensure_consistency=ensure_consistency,
+            consistency_scope=consistency_scope,
             use_cache=use_cache,
             auto_parallel=auto_parallel,
             chunk_size=chunk_size,
@@ -161,6 +180,8 @@ def replace_with_my_data(
     auto_parallel=False,
     chunk_size=1000,
     max_workers=4,
+    *,
+    consistency_scope="text",
 ):
     """Replace detected entities using a required custom label mapping.
 
@@ -170,20 +191,29 @@ def replace_with_my_data(
         user_replacements (dict): Nonempty mapping from label to a fixed string
             or list of candidate strings. Unmapped labels use normal fallback.
         ensure_consistency (bool): Reuse one replacement for repeated source
-            strings in this call.
+            strings in this call. Defaults to true. With the default scope,
+            the first occurrence chooses the replacement across all labels,
+            preserving v0.7.1 behavior.
+        consistency_scope (str): Added in v0.7.2. ``"text"`` (default) shares
+            replacements for exact source text across labels; ``"label"``
+            shares only within each label/source pair. Labels are case
+            insensitive and source text is case sensitive. Has no effect when
+            ``ensure_consistency=False``. Older versions reject this argument.
         use_json_mapping (bool): Use bundled values for unmapped labels.
         extractor: Optional extractor providing ``predict2`` and ``predict``.
         merger: Optional object providing ``merge(entities, text)``.
         replacer: Optional ``EntityReplacer``-compatible replacement component.
         auto_parallel (bool): Request chunked extraction for long text.
-        chunk_size (int): Chunk threshold in characters. Longer text is chunked.
+        chunk_size (int): Soft chunk target in characters. Longer text is chunked
+            with whole words and overlapping context across boundaries.
         max_workers (int): Maximum worker threads for parallel extraction.
 
     Returns:
         zink.result.PseudonymizationResult: Result with transformed text.
 
     Raises:
-        ValueError: If ``user_replacements`` is empty or omitted.
+        ValueError: If ``user_replacements`` is empty or omitted, or
+            ``consistency_scope`` is not ``"text"`` or ``"label"``.
     """
     if extractor is None and merger is None and replacer is None and use_json_mapping:
         return _global_instance.replace_with_my_data(
@@ -191,6 +221,7 @@ def replace_with_my_data(
             categories=categories,
             user_replacements=user_replacements,
             ensure_consistency=ensure_consistency,
+            consistency_scope=consistency_scope,
             auto_parallel=auto_parallel,
             chunk_size=chunk_size,
             max_workers=max_workers,
@@ -207,6 +238,7 @@ def replace_with_my_data(
             categories=categories,
             user_replacements=user_replacements,
             ensure_consistency=ensure_consistency,
+            consistency_scope=consistency_scope,
             auto_parallel=auto_parallel,
             chunk_size=chunk_size,
             max_workers=max_workers,

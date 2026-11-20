@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Verified release tag to publish (for example v0.7.1)
+        description: Verified release tag to publish (for example v0.7.2)
         required: true
-        default: v0.7.1
+        default: v0.7.2
         type: string
 
 permissions:
